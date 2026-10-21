@@ -14,17 +14,12 @@ import org.firstinspires.ftc.teamcode.pedroPathing.constants.Constants;
  * <p>
  * Use gamepad1 to drive the robot around while observing the robot's pose (X, Y, Heading)
  * on Driver Station telemetry.
- * <p>
- * Verification steps:
- * 1. Push or drive forward 24 inches -> X should increase by approximately +24 inches.
- * 2. Push or strafe left 24 inches -> Y should increase by approximately +24 inches.
- * 3. Rotate 90 degrees counter-clockwise -> Heading should increase by ~1.57 radians (+90 degrees).
  */
 @TeleOp(name = "Pedro Pathing: Localization Test", group = "Pedro Pathing Tuning")
 public class LocalizationTest extends LinearOpMode {
 
     @Override
-    public void runOpMode() throws InterruptedException {
+    public void runOpMode() {
         TwoWheelLocalizer localizer = new TwoWheelLocalizer(hardwareMap, Constants.createTwoWheelConfig());
         Mecanum drivetrain = new Mecanum(hardwareMap, Constants.createMecanumConfig());
 
@@ -34,7 +29,7 @@ public class LocalizationTest extends LinearOpMode {
         waitForStart();
 
         while (opModeIsActive()) {
-            // Drive using gamepad stick inputs (y = forward, x = strafe, rx = turn)
+            // Drive using gamepad stick inputs
             double y = -gamepad1.left_stick_y;
             double x = gamepad1.left_stick_x * 1.1;
             double rx = gamepad1.right_stick_x;
