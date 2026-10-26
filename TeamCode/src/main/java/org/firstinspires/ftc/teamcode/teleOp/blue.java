@@ -17,9 +17,6 @@ public class blue extends LinearOpMode {
         Mecanum drivetrain = new Mecanum(hardwareMap, Constants.createMecanumConfig());
         subsystems robotSubsystems = new subsystems(hardwareMap, subsystems.Alliance.BLUE);
 
-        // Track selected game piece (Default: Pollen)
-        subsystems.GamePiece selectedGamePiece = subsystems.GamePiece.POLLEN;
-
         telemetry.addData("Status", "Blue TeleOp Initialized. Waiting for start.");
         telemetry.update();
 
@@ -38,25 +35,19 @@ public class blue extends LinearOpMode {
             robotSubsystems.updateOdometry();
             robotSubsystems.updateHoodAutomatically();
 
-            // 3. Game Piece Selection via Gamepad 2 D-pad Up/Down
-            if (gamepad2.dpad_up) {
-                selectedGamePiece = subsystems.GamePiece.POLLEN;
-            } else if (gamepad2.dpad_down) {
-                selectedGamePiece = subsystems.GamePiece.NECTAR;
-            }
-
-            // 4. Shooter Controls (RB to start, LB to stop)
+            // 3. Dedicated Shooter Controls for holding both Pollen & Nectar
             if (gamepad2.right_bumper) {
-                if (selectedGamePiece == subsystems.GamePiece.POLLEN) {
-                    robotSubsystems.startShooter1Pollen();
-                } else {
-                    robotSubsystems.startShooter2Nectar();
-                }
+                // Shoot Pollen (Biobuzz Shooter 1)
+                robotSubsystems.startShooter1Pollen();
+            } else if (gamepad2.y) {
+                // Shoot Nectar (Shooter 2)
+                robotSubsystems.startShooter2Nectar();
             } else if (gamepad2.left_bumper) {
+                // Stop both shooters
                 robotSubsystems.stopShooters();
             }
 
-            // 5. Intake Controls (RT to intake in, LT to intake out/reverse)
+            // 4. Intake Controls (RT to intake in, LT to intake out/reverse)
             if (gamepad2.right_trigger > 0.1) {
                 robotSubsystems.setIntakePower(subsystems.INTAKE_POWER * gamepad2.right_trigger);
             } else if (gamepad2.left_trigger > 0.1) {
@@ -67,13 +58,12 @@ public class blue extends LinearOpMode {
 
             // Telemetry reporting
             telemetry.addData("Alliance", "BLUE");
-            telemetry.addData("Auto-Selected Hive 1 or 2", robotSubsystems.getActiveHive());
-            telemetry.addData("Selected Game Piece", selectedGamePiece);
+            telemetry.addData("Auto-Selected Hive", robotSubsystems.getActiveHive());
             telemetry.addData("Distance to Hive (in)", "%.2f", robotSubsystems.getDistanceFromHive());
             telemetry.addData("Hood Position", "%.2f", robotSubsystems.getHoodCurrentPosition());
             telemetry.addData("Pose X", "%.2f", robotSubsystems.getCurrentPose().x());
             telemetry.addData("Pose Y", "%.2f", robotSubsystems.getCurrentPose().y());
             telemetry.update();
         }
-            }
+    }
 }
