@@ -26,19 +26,22 @@ public class rawSubsystem {
     // Current selected shooting position (Default: CLOSE)
     private ShootingPosition currentPosition = ShootingPosition.CLOSE;
 
+    // Motor Encoder Specs (Adjust this to match your flywheel motor's encoder ticks per revolution)
+    public static final double TICKS_PER_REV = 537.7; // e.g. 537.7 for GoBilda 312 RPM motor
+
     // Fixed Hood Angle Position Constant
     public static final double HOOD_FIXED_POSITION = 0.40;
 
-    // Preset Power / Speed Constants for Pollen (Shooter 1)
-    public static final double POLLEN_CLOSE_POWER = 0.70;
-    public static final double POLLEN_FAR_POWER = 0.90;
+    // Preset Target RPM Constants for Pollen (Shooter 1)
+    public static final double POLLEN_CLOSE_RPM = 3800.0;
+    public static final double POLLEN_FAR_RPM   = 4800.0;
 
-    // Preset Power / Speed Constants for Nectar (Shooter 2)
-    public static final double NECTAR_CLOSE_POWER = 0.60;
-    public static final double NECTAR_FAR_POWER = 0.80;
+    // Preset Target RPM Constants for Nectar (Shooter 2)
+    public static final double NECTAR_CLOSE_RPM = 3200.0;
+    public static final double NECTAR_FAR_RPM   = 4200.0;
 
-    // Intake Power Constant
-    public static final double INTAKE_POWER = 0.80;
+    // Intake Power Constant (Full Power = 1.0)
+    public static final double INTAKE_POWER = 1.0;
 
     public rawSubsystem(HardwareMap hardwareMap) {
         // Initialize Motors
@@ -62,6 +65,13 @@ public class rawSubsystem {
     }
 
     /**
+     * Converts target RPM to encoder ticks per second
+     */
+    private double rpmToTicksPerSec(double rpm) {
+        return (rpm * TICKS_PER_REV) / 60.0;
+    }
+
+    /**
      * Select shooting position preset (CLOSE vs FAR)
      */
     public void setShootingPosition(ShootingPosition position) {
@@ -73,29 +83,29 @@ public class rawSubsystem {
     }
 
     /**
-     * Start Shooter 1 (Pollen) based on preset position
+     * Start Shooter 1 (Pollen) using target RPM preset
      */
     public void startShooter1Pollen() {
-        double power = (currentPosition == ShootingPosition.CLOSE) ? POLLEN_CLOSE_POWER : POLLEN_FAR_POWER;
-        shooter1Pollen.setPower(power);
-        shooter2Nectar.setPower(0.0);
+        double targetRpm = (currentPosition == ShootingPosition.CLOSE) ? POLLEN_CLOSE_RPM : POLLEN_FAR_RPM;
+        shooter1Pollen.setVelocity(rpmToTicksPerSec(targetRpm));
+        shooter2Nectar.setVelocity(0.0);
     }
 
     /**
-     * Start Shooter 2 (Nectar) based on preset position
+     * Start Shooter 2 (Nectar) using target RPM preset
      */
     public void startShooter2Nectar() {
-        double power = (currentPosition == ShootingPosition.CLOSE) ? NECTAR_CLOSE_POWER : NECTAR_FAR_POWER;
-        shooter2Nectar.setPower(power);
-        shooter1Pollen.setPower(0.0);
+        double targetRpm = (currentPosition == ShootingPosition.CLOSE) ? NECTAR_CLOSE_RPM : NECTAR_FAR_RPM;
+        shooter2Nectar.setVelocity(rpmToTicksPerSec(targetRpm));
+        shooter1Pollen.setVelocity(0.0);
     }
 
     /**
      * Stop both shooters
      */
     public void stopShooters() {
-        shooter1Pollen.setPower(0.0);
-        shooter2Nectar.setPower(0.0);
+        shooter1Pollen.setVelocity(0.0);
+        shooter2Nectar.setVelocity(0.0);
     }
 
     // Intake Controls

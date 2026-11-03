@@ -54,10 +54,13 @@ public class subsystems {
     private double hoodSlope = 0.005;
     private double hoodIntercept = 0.1;
 
-    // Preset power constants for Pollen vs Nectar & Intake
-    public static final double POLLEN_POWER = 0.85;
-    public static final double NECTAR_POWER = 0.70;
-    public static final double INTAKE_POWER = 0.80;
+    // Motor Encoder Specs (Adjust this to match your flywheel motor's encoder ticks per revolution)
+    public static final double TICKS_PER_REV = 537.7; // e.g. 537.7 for GoBilda 312 RPM motor
+
+    // Preset Target RPM constants for Pollen vs Nectar & Intake Power
+    public static final double POLLEN_RPM = 4500.0;
+    public static final double NECTAR_RPM = 3800.0;
+    public static final double INTAKE_POWER = 1.0;
 
     public subsystems(HardwareMap hardwareMap, Alliance alliance) {
         this.alliance = alliance;
@@ -83,6 +86,13 @@ public class subsystems {
 
         // Initialize Hood Servo
         hoodServo = hardwareMap.get(Servo.class, "hoodServo");
+    }
+
+    /**
+     * Converts target RPM to encoder ticks per second
+     */
+    private double rpmToTicksPerSec(double rpm) {
+        return (rpm * TICKS_PER_REV) / 60.0;
     }
 
     public void updateOdometry() {
@@ -137,20 +147,20 @@ public class subsystems {
         hoodServo.setPosition(clamped);
     }
 
-    // Shooter Controls
+    // Shooter Controls (RPM Velocity Control)
     public void startShooter1Pollen() {
-        shooter1Pollen.setPower(POLLEN_POWER);
-        shooter2Nectar.setPower(0.0);
+        shooter1Pollen.setVelocity(rpmToTicksPerSec(POLLEN_RPM));
+        shooter2Nectar.setVelocity(0.0);
     }
 
     public void startShooter2Nectar() {
-        shooter2Nectar.setPower(NECTAR_POWER);
-        shooter1Pollen.setPower(0.0);
+        shooter2Nectar.setVelocity(rpmToTicksPerSec(NECTAR_RPM));
+        shooter1Pollen.setVelocity(0.0);
     }
 
     public void stopShooters() {
-        shooter1Pollen.setPower(0.0);
-        shooter2Nectar.setPower(0.0);
+        shooter1Pollen.setVelocity(0.0);
+        shooter2Nectar.setVelocity(0.0);
     }
 
     // Intake Controls
