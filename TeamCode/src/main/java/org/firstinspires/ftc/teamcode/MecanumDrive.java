@@ -39,8 +39,8 @@ public class MecanumDrive extends LinearOpMode {
             // Y stick is reversed on gamepads (pushing up is negative), so we negate it here
             double y = -gamepad1.left_stick_y;
 
-            // Multiply by 1.1 to counteract imperfect strafing mechanics
-            double x = gamepad1.left_stick_x * 1.1;
+            // Multiply by 1.1 to counteract imperfect strafing mechanics (negated to fix reversed strafe)
+            double x = -gamepad1.left_stick_x * 1.1;
 
             // Turning axis (negated so pushing right stick right turns robot right)
             double rx = -gamepad1.right_stick_x;

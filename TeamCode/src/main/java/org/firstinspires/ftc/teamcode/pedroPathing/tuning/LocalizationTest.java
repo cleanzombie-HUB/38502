@@ -31,7 +31,7 @@ public class LocalizationTest extends LinearOpMode {
         while (opModeIsActive()) {
             // Drive using gamepad stick inputs
             double y = -gamepad1.left_stick_y;
-            double x = gamepad1.left_stick_x * 1.1;
+            double x = -gamepad1.left_stick_x * 1.1;
             double rx = -gamepad1.right_stick_x;
 
             drivetrain.drive(new DrivePowers(y, x, rx), false);
