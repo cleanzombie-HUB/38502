@@ -42,8 +42,8 @@ public class MecanumDrive extends LinearOpMode {
             // Multiply by 1.1 to counteract imperfect strafing mechanics
             double x = gamepad1.left_stick_x * 1.1;
 
-            // Turning axis
-            double rx = gamepad1.right_stick_x;
+            // Turning axis (negated so pushing right stick right turns robot right)
+            double rx = -gamepad1.right_stick_x;
 
             // Denominator ensures we maintain the correct ratio if inputs exceed 1.0
             double denominator = Math.max(Math.abs(y) + Math.abs(x) + Math.abs(rx), 1.0);

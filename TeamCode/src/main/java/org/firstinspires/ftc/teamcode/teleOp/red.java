@@ -27,7 +27,7 @@ public class red extends LinearOpMode {
             // 1. Drivetrain Control via gamepad1
             double y = -gamepad1.left_stick_y;
             double x = gamepad1.left_stick_x * 1.1;
-            double rx = gamepad1.right_stick_x;
+            double rx = -gamepad1.right_stick_x;
 
             drivetrain.drive(new DrivePowers(y, x, rx), false);
 
