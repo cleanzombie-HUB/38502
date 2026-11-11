@@ -1,23 +1,32 @@
 package org.firstinspires.ftc.teamcode.teleOp;
 
-import com.pedropathing.drivetrain.DrivePowers;
-import com.pedropathing.revhub.drivetrains.Mecanum;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-
-import org.firstinspires.ftc.teamcode.pedroPathing.constants.Constants;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
 @TeleOp
 public class testOp extends LinearOpMode {
 
+    private DcMotor frontLeftMotor;
+    private DcMotor backLeftMotor;
+    private DcMotor frontRightMotor;
+    private DcMotor backRightMotor;
     private DcMotorEx intakeMotor;
 
     @Override
     public void runOpMode() {
-        // Initialize Mecanum Drivetrain
-        Mecanum drivetrain = new Mecanum(hardwareMap, Constants.createMecanumConfig());
+        // Initialize Drivetrain Motors directly (standard FTC hardwareMap)
+        frontLeftMotor = hardwareMap.dcMotor.get("frontLeft");
+        backLeftMotor = hardwareMap.dcMotor.get("backLeft");
+        frontRightMotor = hardwareMap.dcMotor.get("frontRight");
+        backRightMotor = hardwareMap.dcMotor.get("backRight");
+
+        frontLeftMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+        backLeftMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+        frontRightMotor.setDirection(DcMotorSimple.Direction.FORWARD);
+        backRightMotor.setDirection(DcMotorSimple.Direction.FORWARD);
 
         // Initialize Intake Motor ("intake")
         intakeMotor = hardwareMap.get(DcMotorEx.class, "intake");
@@ -30,15 +39,24 @@ public class testOp extends LinearOpMode {
         if (isStopRequested()) return;
 
         while (opModeIsActive()) {
-            // 1. Mecanum Drivetrain Control (Gamepad 1)
+            // 1. Direct Mecanum Drivetrain Control (Gamepad 1)
             double y = -gamepad1.left_stick_y;
-            double x = gamepad1.left_stick_x * 1.1; // Multiplier counteracts strafing friction
+            double x = gamepad1.left_stick_x * 1.1;
             double rx = gamepad1.right_stick_x;
 
-            drivetrain.drive(new DrivePowers(y, x, rx), false);
+            double denominator = Math.max(Math.abs(y) + Math.abs(x) + Math.abs(rx), 1.0);
+
+            double frontLeftPower = (y + x + rx) / denominator;
+            double backLeftPower = (y - x + rx) / denominator;
+            double frontRightPower = (y - x - rx) / denominator;
+            double backRightPower = (y + x - rx) / denominator;
+
+            frontLeftMotor.setPower(frontLeftPower);
+            backLeftMotor.setPower(backLeftPower);
+            frontRightMotor.setPower(frontRightPower);
+            backRightMotor.setPower(backRightPower);
 
             // 2. Intake Control (Gamepad 1 or Gamepad 2 Triggers)
-            // Hold RT to Intake IN at full power (1.0), Hold LT to Intake OUT / Reverse at full power (-1.0)
             double intakePower = 0.0;
             if (gamepad1.right_trigger > 0.1) {
                 intakePower = 1.0 * gamepad1.right_trigger;

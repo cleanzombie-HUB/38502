@@ -31,6 +31,7 @@ public class subsystems {
     private final DcMotorEx shooter2Nectar;  // Shooter 2: Nectar
     private final DcMotorEx intakeMotor;       // Intake motor
     private final Servo hoodServo;           // Adjustable hood servo
+    private final Servo gateServo;           // Servo gate blocking/releasing balls into flywheels
 
     // Odometry localizer
     private final TwoWheelLocalizer localizer;
@@ -50,6 +51,10 @@ public class subsystems {
     private static final double BLUE_HIVE_2_X = 0.0;
     private static final double BLUE_HIVE_2_Y = 108.0;
 
+    // Servo Gate Position Constants
+    public static final double GATE_CLOSED = 0.0;
+    public static final double GATE_OPEN   = 0.6;
+
     // Linear equation constants for hood adjustment based on distance: position = m * distance + c
     private double hoodSlope = 0.005;
     private double hoodIntercept = 0.1;
@@ -57,9 +62,9 @@ public class subsystems {
     // Motor Encoder Specs (Adjust this to match your flywheel motor's encoder ticks per revolution)
     public static final double TICKS_PER_REV = 537.7; // e.g. 537.7 for GoBilda 312 RPM motor
 
-    // Preset Target RPM constants for Pollen vs Nectar & Intake Power
-    public static final double POLLEN_RPM = 4500.0;
-    public static final double NECTAR_RPM = 3800.0;
+    // Preset Target RPM constants (Heavier Nectar requires higher RPM than lighter Pollen)
+    public static final double POLLEN_RPM = 3800.0;
+    public static final double NECTAR_RPM = 4600.0;
     public static final double INTAKE_POWER = 1.0;
 
     public subsystems(HardwareMap hardwareMap, Alliance alliance) {
@@ -84,8 +89,11 @@ public class subsystems {
         shooter2Nectar.setDirection(DcMotorEx.Direction.FORWARD);
         intakeMotor.setDirection(DcMotorEx.Direction.FORWARD);
 
-        // Initialize Hood Servo
+        // Initialize Servos
         hoodServo = hardwareMap.get(Servo.class, "hoodServo");
+
+        gateServo = hardwareMap.get(Servo.class, "gateServo");
+        gateServo.setPosition(GATE_CLOSED); // Default gate is CLOSED
     }
 
     /**
@@ -110,6 +118,19 @@ public class subsystems {
 
     public HiveTarget getActiveHive() {
         return activeHive;
+    }
+
+    // Servo Gate Controls
+    public void openGate() {
+        gateServo.setPosition(GATE_OPEN);
+    }
+
+    public void closeGate() {
+        gateServo.setPosition(GATE_CLOSED);
+    }
+
+    public void setGatePosition(double position) {
+        gateServo.setPosition(position);
     }
 
     /**
@@ -147,7 +168,7 @@ public class subsystems {
         hoodServo.setPosition(clamped);
     }
 
-    // Shooter Controls (RPM Velocity Control)
+    // Shooter Controls (RPM Velocity Control using built-in motor encoders)
     public void startShooter1Pollen() {
         shooter1Pollen.setVelocity(rpmToTicksPerSec(POLLEN_RPM));
         shooter2Nectar.setVelocity(0.0);
@@ -161,6 +182,7 @@ public class subsystems {
     public void stopShooters() {
         shooter1Pollen.setVelocity(0.0);
         shooter2Nectar.setVelocity(0.0);
+        closeGate();
     }
 
     // Intake Controls
@@ -188,4 +210,5 @@ public class subsystems {
     public double getHoodSlope() { return hoodSlope; }
     public double getHoodIntercept() { return hoodIntercept; }
     public double getHoodCurrentPosition() { return hoodServo.getPosition(); }
+    public double getGateCurrentPosition() { return gateServo.getPosition(); }
 }

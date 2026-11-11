@@ -15,7 +15,7 @@ public class Constants {
 
     // REV Through Bore Encoder specification (8192 ticks per revolution)
     public static double TICKS_PER_REV = 8192.0;
-    public static double WHEEL_DIAMETER_INCHES = 1.37795; // 35mm deadwheels (adjust if 2.0" or 48mm)
+    public static double WHEEL_DIAMETER_INCHES = 38.0 / 25.4; // 38mm deadwheels (1.49606 inches)
     public static double TICKS_TO_INCHES = (Math.PI * WHEEL_DIAMETER_INCHES) / TICKS_PER_REV;
 
     // 2-Wheel Odometry Offsets (in inches relative to robot center of rotation)
@@ -56,7 +56,7 @@ public class Constants {
             c.forwardTicksToInches.set(TICKS_TO_INCHES);
             c.strafeTicksToInches.set(TICKS_TO_INCHES);
 
-            c.xPodDirection.set(Encoder.FORWARD);
+            c.xPodDirection.set(Encoder.REVERSE);
             c.yPodDirection.set(Encoder.FORWARD);
 
             c.imu.set(new RevHubIMU(new RevHubOrientationOnRobot(

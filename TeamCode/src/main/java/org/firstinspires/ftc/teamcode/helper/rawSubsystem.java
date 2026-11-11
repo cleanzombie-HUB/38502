@@ -22,6 +22,7 @@ public class rawSubsystem {
     private final DcMotorEx shooter2Nectar;  // Shooter 2: Nectar
     private final DcMotorEx intakeMotor;       // Intake motor
     private final Servo hoodServo;           // Hood servo held at a fixed angle
+    private final Servo gateServo;           // Servo gate blocking/releasing balls into flywheels
 
     // Current selected shooting position (Default: CLOSE)
     private ShootingPosition currentPosition = ShootingPosition.CLOSE;
@@ -32,13 +33,17 @@ public class rawSubsystem {
     // Fixed Hood Angle Position Constant
     public static final double HOOD_FIXED_POSITION = 0.40;
 
-    // Preset Target RPM Constants for Pollen (Shooter 1)
-    public static final double POLLEN_CLOSE_RPM = 3800.0;
-    public static final double POLLEN_FAR_RPM   = 4800.0;
+    // Servo Gate Position Constants (Adjust based on mechanical setup)
+    public static final double GATE_CLOSED = 0.0;
+    public static final double GATE_OPEN   = 0.6;
 
-    // Preset Target RPM Constants for Nectar (Shooter 2)
-    public static final double NECTAR_CLOSE_RPM = 3200.0;
-    public static final double NECTAR_FAR_RPM   = 4200.0;
+    // Preset Target RPM Constants for Pollen (Shooter 1) - Lighter piece
+    public static final double POLLEN_CLOSE_RPM = 3400.0;
+    public static final double POLLEN_FAR_RPM   = 4400.0;
+
+    // Preset Target RPM Constants for Nectar (Shooter 2) - Heavier piece
+    public static final double NECTAR_CLOSE_RPM = 4000.0;
+    public static final double NECTAR_FAR_RPM   = 5000.0;
 
     // Intake Power Constant (Full Power = 1.0)
     public static final double INTAKE_POWER = 1.0;
@@ -59,9 +64,12 @@ public class rawSubsystem {
         shooter2Nectar.setDirection(DcMotorEx.Direction.FORWARD);
         intakeMotor.setDirection(DcMotorEx.Direction.FORWARD);
 
-        // Initialize Hood Servo and lock to fixed position
+        // Initialize Servos
         hoodServo = hardwareMap.get(Servo.class, "hoodServo");
         hoodServo.setPosition(HOOD_FIXED_POSITION);
+
+        gateServo = hardwareMap.get(Servo.class, "gateServo");
+        gateServo.setPosition(GATE_CLOSED); // Default gate is CLOSED
     }
 
     /**
@@ -71,15 +79,25 @@ public class rawSubsystem {
         return (rpm * TICKS_PER_REV) / 60.0;
     }
 
-    /**
-     * Select shooting position preset (CLOSE vs FAR)
-     */
     public void setShootingPosition(ShootingPosition position) {
         this.currentPosition = position;
     }
 
     public ShootingPosition getShootingPosition() {
         return currentPosition;
+    }
+
+    // Servo Gate Controls
+    public void openGate() {
+        gateServo.setPosition(GATE_OPEN);
+    }
+
+    public void closeGate() {
+        gateServo.setPosition(GATE_CLOSED);
+    }
+
+    public void setGatePosition(double position) {
+        gateServo.setPosition(position);
     }
 
     /**
@@ -101,11 +119,12 @@ public class rawSubsystem {
     }
 
     /**
-     * Stop both shooters
+     * Stop both shooters and close gate
      */
     public void stopShooters() {
         shooter1Pollen.setVelocity(0.0);
         shooter2Nectar.setVelocity(0.0);
+        closeGate();
     }
 
     // Intake Controls
@@ -125,12 +144,15 @@ public class rawSubsystem {
         intakeMotor.setPower(0.0);
     }
 
-    // Set fixed hood position
     public void setFixedHoodPosition(double position) {
         hoodServo.setPosition(position);
     }
 
     public double getHoodCurrentPosition() {
         return hoodServo.getPosition();
+    }
+
+    public double getGateCurrentPosition() {
+        return gateServo.getPosition();
     }
 }
