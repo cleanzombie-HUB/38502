@@ -5,7 +5,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
-import org.firstinspires.ftc.teamcode.helper.subsystems;
+import org.firstinspires.ftc.teamcode.helper.rawSubsystem;
 
 @TeleOp(name = "Red TeleOp", group = "Competition")
 public class red extends LinearOpMode {
@@ -28,20 +28,20 @@ public class red extends LinearOpMode {
         frontRightMotor.setDirection(DcMotorSimple.Direction.FORWARD);
         backRightMotor.setDirection(DcMotorSimple.Direction.FORWARD);
 
-        // Initialize Subsystems for RED Alliance
-        subsystems robotSubsystems = new subsystems(hardwareMap, subsystems.Alliance.RED);
+        // Initialize Raw Subsystem
+        rawSubsystem robotSubsystems = new rawSubsystem(hardwareMap);
 
-        telemetry.addData("Status", "Red TeleOp Initialized. Waiting for start.");
+        telemetry.addData("Status", "Red TeleOp Initialized (rawSubsystem). Waiting for start.");
         telemetry.update();
 
         waitForStart();
         if (isStopRequested()) return;
 
         while (opModeIsActive()) {
-            // 1. Standard Direct Mecanum Drivetrain Control (Gamepad 1)
+            // 1. Direct Mecanum Drivetrain Control (Gamepad 1)
             double y = -gamepad1.left_stick_y;
-            double x = gamepad1.left_stick_x * 1.1;
-            double rx = gamepad1.right_stick_x;
+            double x = -gamepad1.left_stick_x * 1.1;
+            double rx = -gamepad1.right_stick_x;
 
             double denominator = Math.max(Math.abs(y) + Math.abs(x) + Math.abs(rx), 1.0);
 
@@ -55,33 +55,36 @@ public class red extends LinearOpMode {
             frontRightMotor.setPower(frontRightPower);
             backRightMotor.setPower(backRightPower);
 
-            // 2. Update Odometry & Automatically Target Closest Hive & Adjust Hood
-            robotSubsystems.updateOdometry();
-            robotSubsystems.updateHoodAutomatically();
+            // 2. Target Shooting Position Selection (D-Pad UP = CLOSE, D-Pad DOWN = FAR)
+            if (gamepad2.dpad_up) {
+                robotSubsystems.setShootingPosition(rawSubsystem.ShootingPosition.CLOSE);
+            } else if (gamepad2.dpad_down) {
+                robotSubsystems.setShootingPosition(rawSubsystem.ShootingPosition.FAR);
+            }
 
-            // 3. Dedicated Shooter & Servo Gate Controls
+            // 3. Dedicated Shooter & Servo Gate Controls (Gamepad 2)
             if (gamepad2.right_bumper) {
-                // Shoot Pollen: Start Pollen Flywheel, Open Servo Gate, & Run Intake to Feed
+                // Shoot Pollen: Start Pollen Flywheel, Open Gate, & Run Intake to Feed
                 robotSubsystems.startShooter1Pollen();
                 robotSubsystems.openGate();
                 robotSubsystems.intakeIn();
             } else if (gamepad2.y) {
-                // Shoot Nectar: Start Nectar Flywheel, Open Servo Gate, & Run Intake to Feed
+                // Shoot Nectar: Start Nectar Flywheel, Open Gate, & Run Intake to Feed
                 robotSubsystems.startShooter2Nectar();
                 robotSubsystems.openGate();
                 robotSubsystems.intakeIn();
             } else if (gamepad2.left_bumper) {
-                // Stop Shooters & Close Servo Gate
+                // Stop Shooters & Intake, Close Gate
                 robotSubsystems.stopShooters();
                 robotSubsystems.stopIntake();
             } else {
-                // Default Intake Controls when not shooting (Gate remains CLOSED while intaking)
+                // Default Intake Controls when not shooting
                 if (gamepad2.right_trigger > 0.1) {
                     robotSubsystems.closeGate();
-                    robotSubsystems.setIntakePower(subsystems.INTAKE_POWER * gamepad2.right_trigger);
+                    robotSubsystems.setIntakePower(rawSubsystem.INTAKE_POWER * gamepad2.right_trigger);
                 } else if (gamepad2.left_trigger > 0.1) {
                     robotSubsystems.closeGate();
-                    robotSubsystems.setIntakePower(-subsystems.INTAKE_POWER * gamepad2.left_trigger);
+                    robotSubsystems.setIntakePower(-rawSubsystem.INTAKE_POWER * gamepad2.left_trigger);
                 } else {
                     robotSubsystems.stopIntake();
                 }
@@ -89,12 +92,9 @@ public class red extends LinearOpMode {
 
             // Telemetry reporting
             telemetry.addData("Alliance", "RED");
-            telemetry.addData("Auto-Selected Hive", robotSubsystems.getActiveHive());
-            telemetry.addData("Distance to Hive (in)", "%.2f", robotSubsystems.getDistanceFromHive());
+            telemetry.addData("Shooting Position", robotSubsystems.getShootingPosition());
             telemetry.addData("Hood Position", "%.2f", robotSubsystems.getHoodCurrentPosition());
             telemetry.addData("Gate Position", "%.2f", robotSubsystems.getGateCurrentPosition());
-            telemetry.addData("Pose X", "%.2f", robotSubsystems.getCurrentPose().x());
-            telemetry.addData("Pose Y", "%.2f", robotSubsystems.getCurrentPose().y());
             telemetry.update();
         }
     }
