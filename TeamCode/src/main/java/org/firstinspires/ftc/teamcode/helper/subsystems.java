@@ -29,7 +29,8 @@ public class subsystems {
     // Hardware components
     private final DcMotorEx shooter1Pollen; // Shooter 1: Pollen (Biobuzz)
     private final DcMotorEx shooter2Nectar;  // Shooter 2: Nectar
-    private final DcMotorEx intakeMotor;       // Intake motor
+    private final DcMotorEx intakeMotor;       // Intake motor (floor pickup)
+    private final DcMotorEx sortingMotor;      // Sorting motor (pushes/sorts balls into shooter)
     private final Servo hoodServo;           // Adjustable hood servo
     private final Servo gateServo;           // Servo gate blocking/releasing balls into flywheels
 
@@ -65,7 +66,10 @@ public class subsystems {
     // Preset Target RPM constants (Heavier Nectar requires higher RPM than lighter Pollen)
     public static final double POLLEN_RPM = 3800.0;
     public static final double NECTAR_RPM = 4600.0;
-    public static final double INTAKE_POWER = 1.0;
+
+    // Motor Power Constants (Full Power = 1.0)
+    public static final double INTAKE_POWER  = 1.0;
+    public static final double SORTING_POWER = 1.0;
 
     public subsystems(HardwareMap hardwareMap, Alliance alliance) {
         this.alliance = alliance;
@@ -78,16 +82,19 @@ public class subsystems {
         shooter1Pollen = hardwareMap.get(DcMotorEx.class, "shooter1");
         shooter2Nectar = hardwareMap.get(DcMotorEx.class, "shooter2");
         intakeMotor = hardwareMap.get(DcMotorEx.class, "intake");
+        sortingMotor = hardwareMap.get(DcMotorEx.class, "sorting");
 
         // Set run modes
         shooter1Pollen.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         shooter2Nectar.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         intakeMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        sortingMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         // Set motor directions
         shooter1Pollen.setDirection(DcMotorEx.Direction.FORWARD);
         shooter2Nectar.setDirection(DcMotorEx.Direction.FORWARD);
         intakeMotor.setDirection(DcMotorEx.Direction.FORWARD);
+        sortingMotor.setDirection(DcMotorEx.Direction.FORWARD);
 
         // Initialize Servos
         hoodServo = hardwareMap.get(Servo.class, "hoodServo");
@@ -168,7 +175,7 @@ public class subsystems {
         hoodServo.setPosition(clamped);
     }
 
-    // Shooter Controls (RPM Velocity Control using built-in motor encoders)
+    // Shooter Controls (RPM Velocity Control)
     public void startShooter1Pollen() {
         shooter1Pollen.setVelocity(rpmToTicksPerSec(POLLEN_RPM));
         shooter2Nectar.setVelocity(0.0);
@@ -200,6 +207,23 @@ public class subsystems {
 
     public void stopIntake() {
         intakeMotor.setPower(0.0);
+    }
+
+    // Sorting Controls
+    public void setSortingPower(double power) {
+        sortingMotor.setPower(power);
+    }
+
+    public void sortingIn() {
+        sortingMotor.setPower(SORTING_POWER);
+    }
+
+    public void sortingOut() {
+        sortingMotor.setPower(-SORTING_POWER);
+    }
+
+    public void stopSorting() {
+        sortingMotor.setPower(0.0);
     }
 
     public void setHoodLinearParameters(double slope, double intercept) {

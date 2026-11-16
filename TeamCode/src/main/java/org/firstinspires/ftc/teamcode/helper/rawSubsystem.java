@@ -20,7 +20,8 @@ public class rawSubsystem {
     // Hardware components
     private final DcMotorEx shooter1Pollen; // Shooter 1: Pollen (Biobuzz)
     private final DcMotorEx shooter2Nectar;  // Shooter 2: Nectar
-    private final DcMotorEx intakeMotor;       // Intake motor
+    private final DcMotorEx intakeMotor;       // Intake motor (floor pickup)
+    private final DcMotorEx sortingMotor;      // Sorting motor (pushes/sorts balls into shooter)
     private final Servo hoodServo;           // Hood servo held at a fixed angle
     private final Servo gateServo;           // Servo gate blocking/releasing balls into flywheels
 
@@ -45,24 +46,28 @@ public class rawSubsystem {
     public static final double NECTAR_CLOSE_RPM = 4000.0;
     public static final double NECTAR_FAR_RPM   = 5000.0;
 
-    // Intake Power Constant (Full Power = 1.0)
-    public static final double INTAKE_POWER = 1.0;
+    // Motor Power Constants (Full Power = 1.0)
+    public static final double INTAKE_POWER  = 1.0;
+    public static final double SORTING_POWER = 1.0;
 
     public rawSubsystem(HardwareMap hardwareMap) {
         // Initialize Motors
         shooter1Pollen = hardwareMap.get(DcMotorEx.class, "shooter1");
         shooter2Nectar = hardwareMap.get(DcMotorEx.class, "shooter2");
         intakeMotor = hardwareMap.get(DcMotorEx.class, "intake");
+        sortingMotor = hardwareMap.get(DcMotorEx.class, "sorting");
 
         // Set run modes
         shooter1Pollen.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         shooter2Nectar.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         intakeMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        sortingMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         // Set motor directions
         shooter1Pollen.setDirection(DcMotorEx.Direction.FORWARD);
         shooter2Nectar.setDirection(DcMotorEx.Direction.FORWARD);
         intakeMotor.setDirection(DcMotorEx.Direction.FORWARD);
+        sortingMotor.setDirection(DcMotorEx.Direction.FORWARD);
 
         // Initialize Servos
         hoodServo = hardwareMap.get(Servo.class, "hoodServo");
@@ -142,6 +147,23 @@ public class rawSubsystem {
 
     public void stopIntake() {
         intakeMotor.setPower(0.0);
+    }
+
+    // Sorting Controls
+    public void setSortingPower(double power) {
+        sortingMotor.setPower(power);
+    }
+
+    public void sortingIn() {
+        sortingMotor.setPower(SORTING_POWER);
+    }
+
+    public void sortingOut() {
+        sortingMotor.setPower(-SORTING_POWER);
+    }
+
+    public void stopSorting() {
+        sortingMotor.setPower(0.0);
     }
 
     public void setFixedHoodPosition(double position) {
