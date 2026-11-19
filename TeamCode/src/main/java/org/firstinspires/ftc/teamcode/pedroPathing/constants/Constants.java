@@ -46,8 +46,8 @@ public class Constants {
 
     public static TwoWheelConfig createTwoWheelConfig() {
         return new TwoWheelConfig(c -> {
-            c.xPodName.set("shooter1"); // Hardware map port for parallel pod encoder (shared with sorting motor)
-            c.yPodName.set("sorting"); // Hardware map port for perpendicular pod encoder (shared with shooter1 motor)
+            c.xPodName.set("sorting"); // Hardware map port for parallel pod encoder (shared with sorting motor)
+            c.yPodName.set("shooter1"); // Hardware map port for perpendicular pod encoder (shared with shooter1 motor)
             c.imuName.set("imu");
 
             c.xPodOffset.set(X_POD_OFFSET);
