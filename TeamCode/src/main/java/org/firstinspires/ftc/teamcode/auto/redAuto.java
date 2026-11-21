@@ -8,6 +8,7 @@ import com.pedropathing.revhub.drivetrains.Mecanum;
 import com.pedropathing.revhub.localizers.TwoWheelLocalizer;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.helper.PathsPedro;
 import org.firstinspires.ftc.teamcode.helper.RobotState;
@@ -16,9 +17,9 @@ import org.firstinspires.ftc.teamcode.pedroPathing.constants.Constants;
 
 /**
  * Autonomous OpMode for the Red Alliance using Pedro Pathing.
- * Imports and executes the path sequence defined in PathsPedro.
+ * Integrates shooters, intake, and ramp mechanisms via rawSubsystem.
  */
-@Autonomous
+@Autonomous(name = "Red Auto", group = "Flower")
 public class redAuto extends LinearOpMode {
 
     // Drive Power / Speed Constants (0.0 to 1.0)
@@ -28,6 +29,8 @@ public class redAuto extends LinearOpMode {
     private Follower follower;
     private ForesightConfig foresightConfig;
     private PathsPedro pathsPedro;
+    private rawSubsystem robotSubsystems;
+    private ElapsedTime stateTimer;
 
     private int pathState = 0;
 
@@ -42,83 +45,160 @@ public class redAuto extends LinearOpMode {
     }
 
     /**
-     * Executes the sequence of paths defined in PathsPedro.
+     * Executes the sequence of paths and mechanism controls.
      */
     public void autonomousPathUpdate() {
         switch (pathState) {
             case 0:
-                setMaxPower(MAX_POWER);
-                follower.follow(pathsPedro.path1());
+                // 1. As soon as auto starts, shoot preloaded 4 pollen before moving
+                robotSubsystems.shootPollenAuto();
+                stateTimer.reset();
                 setPathState(1);
                 break;
+
             case 1:
-                if (!follower.isBusy()) {
-                    setMaxPower(MIN_POWER);
-                    follower.follow(pathsPedro.path2());
+                // Wait 2.0s for initial 4 preloaded pollen to shoot, then stop shooters & start Path 1
+                if (stateTimer.seconds() >= 2.0) {
+                    robotSubsystems.stopShooterAuto();
+
+                    setMaxPower(MAX_POWER);
+                    follower.follow(pathsPedro.path1());
                     setPathState(2);
                 }
                 break;
+
             case 2:
+                // 2. Right after Path 1, lower ramp and start intake at start of Path 2
                 if (!follower.isBusy()) {
-                    setMaxPower(MAX_POWER);
-                    follower.follow(pathsPedro.path3());
+                    robotSubsystems.intakeAuto();
+                    stateTimer.reset();
                     setPathState(3);
                 }
                 break;
+
             case 3:
-                if (!follower.isBusy()) {
-                    setMaxPower(MAX_POWER);
-                    follower.follow(pathsPedro.path4());
+                // Wait 1.5 seconds to intake before following Path 2
+                if (stateTimer.seconds() >= 1.5) {
+                    setMaxPower(MIN_POWER);
+                    follower.follow(pathsPedro.path2());
                     setPathState(4);
                 }
                 break;
+
             case 4:
+                // 3. Path 3: Lift up ramp and stop intake
                 if (!follower.isBusy()) {
-                    setMaxPower(MIN_POWER);
-                    follower.follow(pathsPedro.path5());
+                    robotSubsystems.stopIntakeAuto();
+
+                    setMaxPower(MAX_POWER);
+                    follower.follow(pathsPedro.path3());
                     setPathState(5);
                 }
                 break;
+
             case 5:
                 if (!follower.isBusy()) {
                     setMaxPower(MAX_POWER);
-                    follower.follow(pathsPedro.path6());
+                    follower.follow(pathsPedro.path4());
                     setPathState(6);
                 }
                 break;
+
             case 6:
                 if (!follower.isBusy()) {
-                    setMaxPower(MAX_POWER);
-                    follower.follow(pathsPedro.path7());
+                    setMaxPower(MIN_POWER);
+                    follower.follow(pathsPedro.path5());
                     setPathState(7);
                 }
                 break;
+
             case 7:
+                // 4. Right at the end of Path 5: start shooters and shoot all 4 pollen
                 if (!follower.isBusy()) {
-                    setMaxPower(MIN_POWER);
-                    follower.follow(pathsPedro.path8());
+                    robotSubsystems.shootPollenAuto();
+                    stateTimer.reset();
                     setPathState(8);
                 }
                 break;
+
             case 8:
-                if (!follower.isBusy()) {
-                    setMaxPower(MAX_POWER);
-                    follower.follow(pathsPedro.path9());
+                // Wait 2.0s to shoot 4 pollen at end of Path 5, then stop shooters
+                if (stateTimer.seconds() >= 2.0) {
+                    robotSubsystems.stopShooterAuto();
+
+                    // 5. At Path 6: put down ramp and start intake for flower intake
+                    robotSubsystems.intakeAuto();
+                    stateTimer.reset();
                     setPathState(9);
                 }
                 break;
+
             case 9:
-                if (!follower.isBusy()) {
+                // Wait 1.5 seconds to intake before following Path 6
+                if (stateTimer.seconds() >= 1.5) {
                     setMaxPower(MAX_POWER);
-                    follower.follow(pathsPedro.path10());
+                    follower.follow(pathsPedro.path6());
                     setPathState(10);
                 }
                 break;
+
             case 10:
+                // Path 7: intake pollen from flower
+                if (!follower.isBusy()) {
+                    setMaxPower(MAX_POWER);
+                    follower.follow(pathsPedro.path7());
+                    setPathState(11);
+                }
+                break;
+
+            case 11:
+                // 6. Path 8: stop intake but keep ramp down
+                if (!follower.isBusy()) {
+                    robotSubsystems.stopIntake();
+                    robotSubsystems.lowerRamp();
+
+                    setMaxPower(MIN_POWER);
+                    follower.follow(pathsPedro.path8());
+                    setPathState(12);
+                }
+                break;
+
+            case 12:
+                if (!follower.isBusy()) {
+                    setMaxPower(MAX_POWER);
+                    follower.follow(pathsPedro.path9());
+                    setPathState(13);
+                }
+                break;
+
+            case 13:
+                // At end of Path 9: shoot 4 pollen again
+                if (!follower.isBusy()) {
+                    robotSubsystems.shootPollenAuto();
+                    stateTimer.reset();
+                    setPathState(14);
+                }
+                break;
+
+            case 14:
+                // Wait 2.0s to shoot 4 pollen at end of Path 9, then stop shooters
+                if (stateTimer.seconds() >= 2.0) {
+                    robotSubsystems.stopShooterAuto();
+
+                    // Path 10: lift ramp and follow Path 10
+                    robotSubsystems.raiseRamp();
+                    setMaxPower(MAX_POWER);
+                    follower.follow(pathsPedro.path10());
+                    setPathState(15);
+                }
+                break;
+
+            case 15:
                 if (!follower.isBusy()) {
                     setPathState(-1);
                 }
                 break;
+
             default:
                 break;
         }
@@ -140,11 +220,14 @@ public class redAuto extends LinearOpMode {
         Foresight foresight = new Foresight(foresightConfig);
         follower = new Follower(localizer, drivetrain, foresight);
 
-        // Initialize Raw Subsystem
-        rawSubsystem robotSubsystems = new rawSubsystem(hardwareMap);
+        // Initialize Raw Subsystem (No PedroPathing/Odometry dependencies)
+        robotSubsystems = new rawSubsystem(hardwareMap);
 
         // Initialize Pedro Path definitions for Red
         pathsPedro = new PathsPedro.Red();
+
+        // Initialize Timer
+        stateTimer = new ElapsedTime();
 
         // Set starting pose from PathsPedro definition
         follower.setPose(pathsPedro.getStartPose());

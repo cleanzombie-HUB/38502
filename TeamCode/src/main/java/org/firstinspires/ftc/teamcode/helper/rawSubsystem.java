@@ -188,4 +188,44 @@ public class rawSubsystem {
     public double getRampCurrentPosition() {
         return rampServo.getPosition();
     }
+
+    // =========================================================================
+    // AUTONOMOUS COMBINED HELPER METHODS
+    // =========================================================================
+
+    /**
+     * Autonomous Helper: Lowers ramp, starts intake motor in, and runs sorting motor in.
+     */
+    public void intakeAuto() {
+        lowerRamp();
+        intakeIn();
+        sortingIn();
+    }
+
+    /**
+     * Autonomous Helper: Stops intake motor, stops sorting motor, and raises ramp back up.
+     */
+    public void stopIntakeAuto() {
+        stopIntake();
+        stopSorting();
+        raiseRamp();
+    }
+
+    /**
+     * Autonomous Helper: Starts Pollen shooter flywheel, opens gate servo, and runs sorting motor.
+     */
+    public void shootPollenAuto() {
+        startShooter1Pollen();
+        openGate();
+        sortingIn();
+    }
+
+    /**
+     * Autonomous Helper: Stops flywheels, sorting motor, and closes gate servo.
+     */
+    public void stopShooterAuto() {
+        stopShooters();
+        stopSorting();
+        closeGate();
+    }
 }
