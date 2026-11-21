@@ -31,7 +31,7 @@ public class red extends LinearOpMode {
         // Initialize Raw Subsystem (No PedroPathing/Odometry dependencies)
         rawSubsystem robotSubsystems = new rawSubsystem(hardwareMap);
 
-        telemetry.addData("Status", "Red TeleOp Initialized (Raw Subsystem & Standard Mecanum).");
+        telemetry.addData("Status", "Red TeleOp Initialized.");
         telemetry.update();
 
         waitForStart();
@@ -55,14 +55,21 @@ public class red extends LinearOpMode {
             frontRightMotor.setPower(frontRightPower);
             backRightMotor.setPower(backRightPower);
 
-            // 2. Preset Shooting Position Selection (Gamepad 2 D-Pad)
+            // 2. Preset Shooting Position Selection (Gamepad 2 D-Pad Up / Down)
             if (gamepad2.dpad_up) {
                 robotSubsystems.setShootingPosition(rawSubsystem.ShootingPosition.CLOSE);
             } else if (gamepad2.dpad_down) {
                 robotSubsystems.setShootingPosition(rawSubsystem.ShootingPosition.FAR);
             }
 
-            // 3. Dedicated Shooter, Servo Gate, & Auto Sorting Controls (Gamepad 2)
+            // 3. Flower Intake Ramp Control (Gamepad 2 D-Pad Right = Lower Ramp, D-Pad Left = Raise Ramp)
+            if (gamepad2.dpad_right) {
+                robotSubsystems.lowerRamp(); // Lower ramp 90 degrees for flower intake
+            } else if (gamepad2.dpad_left) {
+                robotSubsystems.raiseRamp(); // Raise ramp 90 degrees (stowed)
+            }
+
+            // 4. Dedicated Shooter, Servo Gate, & Auto Sorting Controls (Gamepad 2)
             if (gamepad2.right_bumper) {
                 // Shoot Pollen (Biobuzz Shooter 1)
                 robotSubsystems.startShooter1Pollen();
@@ -78,7 +85,7 @@ public class red extends LinearOpMode {
                 robotSubsystems.stopShooters();
                 robotSubsystems.stopSorting();
             } else {
-                // 4. Hold-to-Run Sorting Motor Controls (Hold A = Sorting IN, Hold B = Sorting OUT, Release = Stop)
+                // 5. Hold-to-Run Sorting Motor Controls (Hold A = Sorting IN, Hold B = Sorting OUT, Release = Stop)
                 if (gamepad2.a) {
                     robotSubsystems.sortingIn();  // Hold A = Sorting IN
                 } else if (gamepad2.b) {
@@ -87,7 +94,7 @@ public class red extends LinearOpMode {
                     robotSubsystems.stopSorting(); // Release = Auto Stop
                 }
 
-                // 5. Floor Intake Controls (Gamepad 2 Triggers)
+                // 6. Floor Intake Controls (Gamepad 2 Triggers)
                 if (gamepad2.right_trigger > 0.1) {
                     robotSubsystems.closeGate();
                     robotSubsystems.setIntakePower(rawSubsystem.INTAKE_POWER * gamepad2.right_trigger);
@@ -103,6 +110,7 @@ public class red extends LinearOpMode {
             telemetry.addData("Alliance", "RED");
             telemetry.addData("Shooting Preset", robotSubsystems.getShootingPosition());
             telemetry.addData("Gate Position", "%.2f", robotSubsystems.getGateCurrentPosition());
+            telemetry.addData("Ramp Position", "%.2f", robotSubsystems.getRampCurrentPosition());
             telemetry.update();
         }
     }

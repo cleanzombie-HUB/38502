@@ -31,7 +31,6 @@ public class subsystems {
     private final DcMotorEx shooter2Nectar;  // Shooter 2: Nectar
     private final DcMotorEx intakeMotor;       // Intake motor (floor pickup)
     private final DcMotorEx sortingMotor;      // Sorting motor (pushes/sorts balls into shooter)
-    private final Servo hoodServo;           // Adjustable hood servo
     private final Servo gateServo;           // Servo gate blocking/releasing balls into flywheels
 
     // Odometry localizer
@@ -56,20 +55,20 @@ public class subsystems {
     public static final double GATE_CLOSED = 0.0;
     public static final double GATE_OPEN   = 0.6;
 
-    // Linear equation constants for hood adjustment based on distance: position = m * distance + c
-    private double hoodSlope = 0.005;
-    private double hoodIntercept = 0.1;
+    // Studica Maverick Encoder Specs:
+    // Shooter 1 (Pollen): 3.7:1 Motor Geared UP 2:1 to Flywheel (3298 Max RPM, 51.8 ticks per rev)
+    public static final double SHOOTER1_TICKS_PER_REV = 51.8;
 
-    // Motor Encoder Specs (Adjust this to match your flywheel motor's encoder ticks per revolution)
-    public static final double TICKS_PER_REV = 537.7; // e.g. 537.7 for GoBilda 312 RPM motor
+    // Shooter 2 (Nectar): 3.7:1 Motor Geared UP 2:1 to Flywheel (3298 Max RPM, 51.8 ticks per rev)
+    public static final double SHOOTER2_TICKS_PER_REV = 51.8;
 
-    // Preset Target RPM constants (Heavier Nectar requires higher RPM than lighter Pollen)
-    public static final double POLLEN_RPM = 3800.0;
-    public static final double NECTAR_RPM = 4600.0;
+    // Preset Target RPM constants
+    public static final double POLLEN_RPM = 2500.0; // Shooter 1 (Max 3298 RPM)
+    public static final double NECTAR_RPM = 2500.0; // Shooter 2 (Max 3298 RPM)
 
-    // Motor Power Constants (Full Power = 1.0)
+    // Motor Power Constants (Intake = 100%, Sorting = 40% for controlled feeding)
     public static final double INTAKE_POWER  = 1.0;
-    public static final double SORTING_POWER = 1.0;
+    public static final double SORTING_POWER = 0.40; // Controlled sorting power gives flywheel time to spin up
 
     public subsystems(HardwareMap hardwareMap, Alliance alliance) {
         this.alliance = alliance;
@@ -91,23 +90,18 @@ public class subsystems {
         sortingMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         // Set motor directions
-        shooter1Pollen.setDirection(DcMotorEx.Direction.FORWARD);
+        shooter1Pollen.setDirection(DcMotorEx.Direction.REVERSE);
         shooter2Nectar.setDirection(DcMotorEx.Direction.FORWARD);
         intakeMotor.setDirection(DcMotorEx.Direction.FORWARD);
         sortingMotor.setDirection(DcMotorEx.Direction.FORWARD);
 
-        // Initialize Servos
-        hoodServo = hardwareMap.get(Servo.class, "hoodServo");
-
+        // Initialize Servo Gate
         gateServo = hardwareMap.get(Servo.class, "gateServo");
         gateServo.setPosition(GATE_CLOSED); // Default gate is CLOSED
     }
 
-    /**
-     * Converts target RPM to encoder ticks per second
-     */
-    private double rpmToTicksPerSec(double rpm) {
-        return (rpm * TICKS_PER_REV) / 60.0;
+    private double rpmToTicksPerSec(double rpm, double ticksPerRev) {
+        return (rpm * ticksPerRev) / 60.0;
     }
 
     public void updateOdometry() {
@@ -163,26 +157,14 @@ public class subsystems {
         }
     }
 
-    public void updateHoodAutomatically() {
-        double distance = getDistanceFromHive(); // Automatically computes distance and updates activeHive
-        double servoPosition = (hoodSlope * distance) + hoodIntercept;
-        servoPosition = Math.max(0.0, Math.min(1.0, servoPosition));
-        hoodServo.setPosition(servoPosition);
-    }
-
-    public void setHoodPosition(double position) {
-        double clamped = Math.max(0.0, Math.min(1.0, position));
-        hoodServo.setPosition(clamped);
-    }
-
     // Shooter Controls (RPM Velocity Control)
     public void startShooter1Pollen() {
-        shooter1Pollen.setVelocity(rpmToTicksPerSec(POLLEN_RPM));
+        shooter1Pollen.setVelocity(rpmToTicksPerSec(POLLEN_RPM, SHOOTER1_TICKS_PER_REV));
         shooter2Nectar.setVelocity(0.0);
     }
 
     public void startShooter2Nectar() {
-        shooter2Nectar.setVelocity(rpmToTicksPerSec(NECTAR_RPM));
+        shooter2Nectar.setVelocity(rpmToTicksPerSec(NECTAR_RPM, SHOOTER2_TICKS_PER_REV));
         shooter1Pollen.setVelocity(0.0);
     }
 
@@ -226,13 +208,5 @@ public class subsystems {
         sortingMotor.setPower(0.0);
     }
 
-    public void setHoodLinearParameters(double slope, double intercept) {
-        this.hoodSlope = slope;
-        this.hoodIntercept = intercept;
-    }
-
-    public double getHoodSlope() { return hoodSlope; }
-    public double getHoodIntercept() { return hoodIntercept; }
-    public double getHoodCurrentPosition() { return hoodServo.getPosition(); }
     public double getGateCurrentPosition() { return gateServo.getPosition(); }
 }

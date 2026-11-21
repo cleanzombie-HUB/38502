@@ -20,7 +20,7 @@ public class Constants {
 
     // 2-Wheel Odometry Offsets (in inches relative to robot center of rotation)
     // Parallel (forward) pod offset: positive = forward of center
-    public static double X_POD_OFFSET = 0.0;
+    public static double X_POD_OFFSET = 1.0;
     // Perpendicular (strafe) pod offset: positive = left of center
     public static double Y_POD_OFFSET = 0.0;
 
@@ -47,7 +47,7 @@ public class Constants {
     public static TwoWheelConfig createTwoWheelConfig() {
         return new TwoWheelConfig(c -> {
             c.xPodName.set("sorting"); // Hardware map port for parallel pod encoder (shared with sorting motor)
-            c.yPodName.set("shooter1"); // Hardware map port for perpendicular pod encoder (shared with shooter1 motor)
+            c.yPodName.set("intake"); // Hardware map port for perpendicular pod encoder (shared with shooter1 motor)
             c.imuName.set("imu");
 
             c.xPodOffset.set(X_POD_OFFSET);
@@ -57,7 +57,7 @@ public class Constants {
             c.strafeTicksToInches.set(TICKS_TO_INCHES);
 
             c.xPodDirection.set(Encoder.REVERSE);
-            c.yPodDirection.set(Encoder.FORWARD);
+            c.yPodDirection.set(Encoder.REVERSE);
 
             c.imu.set(new RevHubIMU(new RevHubOrientationOnRobot(
                     RevHubOrientationOnRobot.LogoFacingDirection.UP,
