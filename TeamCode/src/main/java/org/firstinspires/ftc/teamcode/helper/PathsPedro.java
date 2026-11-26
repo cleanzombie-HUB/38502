@@ -118,4 +118,105 @@ public class PathsPedro {
             super(true);
         }
     }
+
+    public static class FlowerAngle extends PathsPedro {
+        private final PoseFactory poseFactory;
+
+        private final Pose start;
+        private final Pose p1toflower;
+        private final Pose p2flowerintake;
+        private final Pose p3toshoot;
+        private final Pose p4shootStart;
+        private final Pose p4shoot;
+        private final Pose p5tointakeStart;
+        private final Pose p5tointake;
+        private final Pose p5tointakeControl1;
+        private final Pose p6flowerintake;
+        private final Pose p7shootStart;
+        private final Pose p7shoot;
+        private final Pose p7shootControl1;
+        private final Pose p8parkStart;
+        private final Pose p8park;
+
+        public FlowerAngle(boolean isBlue) {
+            super(isBlue);
+            poseFactory = isBlue
+                    ? PoseFactory.degrees().mirrorAroundPoint(72, 72)
+                    : PoseFactory.degrees();
+
+            start = poseFactory.of(58.8137, 9.4588, 90);
+            p1toflower = poseFactory.of(26.2959, 47.8427, 180);
+            p2flowerintake = poseFactory.of(11.9184, 47.8567, 179.9442);
+            p3toshoot = poseFactory.of(26.3603, 47.4625, 178.4365);
+            p4shootStart = poseFactory.of(26.3603, 47.4625, 180);
+            p4shoot = poseFactory.of(26.9403, 125.2538, 305);
+            p5tointakeStart = poseFactory.of(26.9403, 125.2538, 305);
+            p5tointake = poseFactory.of(45.9727, 120.7368, 90);
+            p5tointakeControl1 = poseFactory.of(40.285, 95.0239, 0);
+            p6flowerintake = poseFactory.of(46.3156, 126.4777, 86.5819);
+            p7shootStart = poseFactory.of(46.3156, 126.4777, 90);
+            p7shoot = poseFactory.of(27.9938, 124.7516, 305);
+            p7shootControl1 = poseFactory.of(42.3772, 92.1253, 0);
+            p8parkStart = poseFactory.of(27.9938, 124.7516, 305);
+            p8park = poseFactory.of(11.9656, 113.6701, 0);
+        }
+
+        @Override
+        public Pose getStartPose() {
+            return start;
+        }
+
+        public Path p1toflower() {
+            return Paths.line(start, p1toflower).linear(start, p1toflower);
+        }
+
+        public Path p2flowerintake() {
+            return Paths.line(p1toflower, p2flowerintake).tangent();
+        }
+
+        public Path p3toshoot() {
+            return Paths.line(p2flowerintake, p3toshoot).reverseTangent();
+        }
+
+        public Path p4shoot() {
+            return Paths.line(p4shootStart, p4shoot).linear(p4shootStart, p4shoot);
+        }
+
+        public Path p5tointake() {
+            return Paths.curve(p5tointakeStart, p5tointakeControl1, p5tointake).linear(p5tointakeStart, p5tointake);
+        }
+
+        public Path p6flowerintake() {
+            return Paths.line(p5tointake, p6flowerintake).tangent();
+        }
+
+        public Path p7shoot() {
+            return Paths.curve(p7shootStart, p7shootControl1, p7shoot).linear(p7shootStart, p7shoot);
+        }
+
+        public Path p8park() {
+            return Paths.line(p8parkStart, p8park).linear(p8parkStart, p8park);
+        }
+
+        @Override public Path path1() { return p1toflower(); }
+        @Override public Path path2() { return p2flowerintake(); }
+        @Override public Path path3() { return p3toshoot(); }
+        @Override public Path path4() { return p4shoot(); }
+        @Override public Path path5() { return p5tointake(); }
+        @Override public Path path6() { return p6flowerintake(); }
+        @Override public Path path7() { return p7shoot(); }
+        @Override public Path path8() { return p8park(); }
+    }
+
+    public static class RedFlowerAngle extends FlowerAngle {
+        public RedFlowerAngle() {
+            super(false);
+        }
+    }
+
+    public static class BlueFlowerAngle extends FlowerAngle {
+        public BlueFlowerAngle() {
+            super(true);
+        }
+    }
 }
