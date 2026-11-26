@@ -1,32 +1,45 @@
 package org.firstinspires.ftc.teamcode.teleOp;
 
+import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.IMU;
+import com.qualcomm.robotcore.hardware.PIDFCoefficients;
+
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
 @TeleOp(name = "Test OpMode (Drive + Intake + Sorting + Shooters 1 & 2)", group = "Testing")
 public class testOp extends LinearOpMode {
 
+    // Drivetrain Motors
     private DcMotorEx frontLeftMotor;
     private DcMotorEx backLeftMotor;
     private DcMotorEx frontRightMotor;
     private DcMotorEx backRightMotor;
+    private IMU imu;
 
+    // Mechanism Motors
     private DcMotorEx intakeMotor;
     private DcMotorEx sortingMotor;
     private DcMotorEx shooter1Pollen;
     private DcMotorEx shooter2Nectar;
 
     // Studica Maverick Encoder Specs:
-    // Shooter 1 (Pollen): 3.7:1 (1649 RPM) Motor Geared UP 2:1 to Flywheel (3298 Max RPM, 51.8 ticks per rev)
-    public static final double SHOOTER1_TICKS_PER_REV = 51.8;
+    // Shooter 1 (Pollen): 1:1 6100 RPM Motor (112.0 4x quadrature ticks per rev)
+    public static final double SHOOTER1_TICKS_PER_REV = 112.0;
 
-    // Shooter 2 (Nectar): 3.7:1 (1649 RPM) Motor Geared UP 2:1 to Flywheel (3298 Max RPM, 51.8 ticks per rev)
-    public static final double SHOOTER2_TICKS_PER_REV = 51.8;
+    // Shooter 2 (Nectar): 1:1 6100 RPM Motor (112.0 4x quadrature ticks per rev)
+    public static final double SHOOTER2_TICKS_PER_REV = 112.0;
 
-    // Dynamic Target RPM (Default 500 RPM, adjustable live using D-Pad)
+    // Target Headings for Auto-Snap (Hive 1 = 0 Deg, Hive 2 = 180 Deg)
+    private static final double HEADING_HIVE_1 = 0.0;
+    private static final double HEADING_HIVE_2 = Math.PI;
+    private static final double HEADING_P = 1.5;
+
+    // Dynamic Target RPM (Default 500 RPM, adjustable live using Gamepad 2 D-Pad)
     private double testRpm = 500.0;
 
     // Button state tracking for debouncing D-Pad presses
@@ -45,7 +58,7 @@ public class testOp extends LinearOpMode {
 
     @Override
     public void runOpMode() {
-        // Initialize Drivetrain Motors
+        // 1. Initialize Drivetrain Motors
         frontLeftMotor = hardwareMap.get(DcMotorEx.class, "frontLeft");
         backLeftMotor = hardwareMap.get(DcMotorEx.class, "backLeft");
         frontRightMotor = hardwareMap.get(DcMotorEx.class, "frontRight");
@@ -56,7 +69,15 @@ public class testOp extends LinearOpMode {
         frontRightMotor.setDirection(DcMotorSimple.Direction.FORWARD);
         backRightMotor.setDirection(DcMotorSimple.Direction.FORWARD);
 
-        // Initialize Motors
+        // 2. Initialize IMU (Control Hub Gyroscope) for Auto-Snap Heading Lock
+        imu = hardwareMap.get(IMU.class, "imu");
+        IMU.Parameters imuParameters = new IMU.Parameters(new RevHubOrientationOnRobot(
+                RevHubOrientationOnRobot.LogoFacingDirection.UP,
+                RevHubOrientationOnRobot.UsbFacingDirection.FORWARD
+        ));
+        imu.initialize(imuParameters);
+
+        // 3. Initialize Mechanism Motors
         intakeMotor = hardwareMap.get(DcMotorEx.class, "intake");
         intakeMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
@@ -65,50 +86,69 @@ public class testOp extends LinearOpMode {
 
         shooter1Pollen = hardwareMap.get(DcMotorEx.class, "shooter1");
         shooter1Pollen.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        shooter1Pollen.setDirection(DcMotorEx.Direction.REVERSE);
+        shooter1Pollen.setDirection(DcMotorEx.Direction.FORWARD);
 
         shooter2Nectar = hardwareMap.get(DcMotorEx.class, "shooter2");
         shooter2Nectar.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        shooter2Nectar.setDirection(DcMotorEx.Direction.FORWARD);
+        shooter2Nectar.setDirection(DcMotorEx.Direction.REVERSE);
 
-        telemetry.addData("Status", "Test OpMode Initialized (Both Shooters: 3.7:1 Geared UP 2:1 -> 3298 Max RPM).");
+        // Tuned Feedforward & Proportional Gain (F=13.5, P=12.0) to lock onto exact target RPM instantly
+        PIDFCoefficients flywheelPidf = new PIDFCoefficients(12.0, 0.0, 0.0, 13.5);
+        shooter1Pollen.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, flywheelPidf);
+        shooter2Nectar.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, flywheelPidf);
+
+        telemetry.addData("Status", "Test OpMode Initialized (Instant Speed Response Enabled).");
         telemetry.update();
 
         waitForStart();
         if (isStopRequested()) return;
 
         while (opModeIsActive()) {
-            // 1. Standard Mecanum Drivetrain Control (Gamepad 1)
+            // =========================================================================
+            // GAMEPAD 1: DRIVER CONTROLS (Driving, Turning, & Auto-Snap Heading Lock)
+            // =========================================================================
             double y = -gamepad1.left_stick_y;
             double x = -gamepad1.left_stick_x * 1.1; // Reversed strafe
             double rx = -gamepad1.right_stick_x;     // Reversed turn
 
+            // Auto-Snap Heading Lock (Hold Gamepad 1 X for Hive 1, Y for Hive 2 / Opposite)
+            boolean snapHive1 = gamepad1.x;
+            boolean snapHive2 = gamepad1.y;
+            double currentHeading = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS);
+
+            if (snapHive1) {
+                double headingError = AngleUnit.normalizeRadians(HEADING_HIVE_1 - currentHeading);
+                rx = Math.max(-1.0, Math.min(1.0, headingError * HEADING_P)); // Snap to Hive 1 (0 Deg)
+            } else if (snapHive2) {
+                double headingError = AngleUnit.normalizeRadians(HEADING_HIVE_2 - currentHeading);
+                rx = Math.max(-1.0, Math.min(1.0, headingError * HEADING_P)); // Snap to Hive 2 (180 Deg)
+            }
+
             double denominator = Math.max(Math.abs(y) + Math.abs(x) + Math.abs(rx), 1.0);
 
-            double frontLeftPower = (y + x + rx) / denominator;
-            double backLeftPower = (y - x + rx) / denominator;
-            double frontRightPower = (y - x - rx) / denominator;
-            double backRightPower = (y + x - rx) / denominator;
+            frontLeftMotor.setPower((y + x + rx) / denominator);
+            backLeftMotor.setPower((y - x + rx) / denominator);
+            frontRightMotor.setPower((y - x - rx) / denominator);
+            backRightMotor.setPower((y + x - rx) / denominator);
 
-            frontLeftMotor.setPower(frontLeftPower);
-            backLeftMotor.setPower(backLeftPower);
-            frontRightMotor.setPower(frontRightPower);
-            backRightMotor.setPower(backRightPower);
+            // =========================================================================
+            // GAMEPAD 2: OPERATOR CONTROLS (Intake, Sorting, Shooters, & Live RPM Tuning)
+            // =========================================================================
 
-            // 2. Dynamic Live RPM Adjustment via D-Pad (Up/Down = +/-500 RPM, Right/Left = +/-100 RPM)
-            boolean currentDpadUp = gamepad1.dpad_up || gamepad2.dpad_up;
-            boolean currentDpadDown = gamepad1.dpad_down || gamepad2.dpad_down;
-            boolean currentDpadRight = gamepad1.dpad_right || gamepad2.dpad_right;
-            boolean currentDpadLeft = gamepad1.dpad_left || gamepad2.dpad_left;
+            // 1. Live Target RPM Adjustment (Gamepad 2 D-Pad)
+            boolean currentDpadUp = gamepad2.dpad_up;
+            boolean currentDpadDown = gamepad2.dpad_down;
+            boolean currentDpadRight = gamepad2.dpad_right;
+            boolean currentDpadLeft = gamepad2.dpad_left;
 
             if (currentDpadUp && !lastDpadUp) {
-                testRpm += 500.0;
+                testRpm += 500.0; // D-Pad Up = +500 RPM
             } else if (currentDpadDown && !lastDpadDown) {
-                testRpm = Math.max(0.0, testRpm - 500.0);
+                testRpm = Math.max(0.0, testRpm - 500.0); // D-Pad Down = -500 RPM
             } else if (currentDpadRight && !lastDpadRight) {
-                testRpm += 100.0;
+                testRpm += 100.0; // D-Pad Right = +100 RPM
             } else if (currentDpadLeft && !lastDpadLeft) {
-                testRpm = Math.max(0.0, testRpm - 100.0);
+                testRpm = Math.max(0.0, testRpm - 100.0); // D-Pad Left = -100 RPM
             }
 
             lastDpadUp = currentDpadUp;
@@ -116,46 +156,40 @@ public class testOp extends LinearOpMode {
             lastDpadRight = currentDpadRight;
             lastDpadLeft = currentDpadLeft;
 
-            // 3. Shooter Controls (Hold RB = Shooter 1 Pollen, Hold Y = Shooter 2 Nectar, Press LB = Stop Both)
-            if (gamepad1.right_bumper || gamepad2.right_bumper) {
+            // 2. Shooter Test Controls (Instant Response via Feedforward F=13.5, P=12.0)
+            if (gamepad2.right_bumper) {
                 shooter1Pollen.setVelocity(rpmToTicksPerSec(testRpm, SHOOTER1_TICKS_PER_REV));
                 shooter2Nectar.setVelocity(0.0);
-            } else if (gamepad1.y || gamepad2.y) {
+            } else if (gamepad2.b && !gamepad2.start) {
                 shooter2Nectar.setVelocity(rpmToTicksPerSec(testRpm, SHOOTER2_TICKS_PER_REV));
                 shooter1Pollen.setVelocity(0.0);
-            } else if (gamepad1.left_bumper || gamepad2.left_bumper) {
+            } else if (gamepad2.left_bumper) {
                 shooter1Pollen.setVelocity(0.0);
                 shooter2Nectar.setVelocity(0.0);
             }
 
-            // 4. Intake Control (Gamepad 1 or 2 Triggers)
+            // 3. Floor Intake Control (Gamepad 2 Triggers)
             double intakePower = 0.0;
-            if (gamepad1.right_trigger > 0.1) {
-                intakePower = 1.0 * gamepad1.right_trigger;
-            } else if (gamepad1.left_trigger > 0.1) {
-                intakePower = -1.0 * gamepad1.left_trigger;
-            } else if (gamepad2.right_trigger > 0.1) {
-                intakePower = 1.0 * gamepad2.right_trigger;
+            if (gamepad2.right_trigger > 0.1) {
+                intakePower = 1.0 * gamepad2.right_trigger; // Hold RT = Intake IN
             } else if (gamepad2.left_trigger > 0.1) {
-                intakePower = -1.0 * gamepad2.left_trigger;
+                intakePower = -1.0 * gamepad2.left_trigger; // Hold LT = Intake OUT / Reverse
             }
-
             intakeMotor.setPower(intakePower);
 
-            // 5. Sorting Motor Control (Gamepad 1 or 2 Hold A = IN, Hold B = OUT)
+            // 4. Sorting Motor Control (Gamepad 2 Hold A = IN)
             double sortingPower = 0.0;
-            if (gamepad1.a || gamepad2.a) {
-                sortingPower = 1.0;
-            } else if (gamepad1.b || gamepad2.b) {
-                sortingPower = -1.0;
+            if (gamepad2.a) {
+                sortingPower = 1.0; // Hold A = Sorting IN
             }
-
             sortingMotor.setPower(sortingPower);
 
-            // Live Telemetry Reporting
+            // =========================================================================
+            // LIVE TELEMETRY REPORTING
+            // =========================================================================
             telemetry.addData("Selected Target RPM", "%.0f RPM", testRpm);
-            telemetry.addData("Shooter 1 (Geared UP 2:1 -> 3298 Max) Flywheel RPM", "%.0f RPM", ticksPerSecToRpm(shooter1Pollen.getVelocity(), SHOOTER1_TICKS_PER_REV));
-            telemetry.addData("Shooter 2 (Geared UP 2:1 -> 3298 Max) Flywheel RPM", "%.0f RPM", ticksPerSecToRpm(shooter2Nectar.getVelocity(), SHOOTER2_TICKS_PER_REV));
+            telemetry.addData("Shooter 1 (Pollen 1:1 6100) Actual RPM", "%.0f RPM", ticksPerSecToRpm(shooter1Pollen.getVelocity(), SHOOTER1_TICKS_PER_REV));
+            telemetry.addData("Shooter 2 (Nectar 1:1 6100) Actual RPM", "%.0f RPM", ticksPerSecToRpm(shooter2Nectar.getVelocity(), SHOOTER2_TICKS_PER_REV));
             telemetry.addData("Intake Power", "%.2f", intakePower);
             telemetry.addData("Sorting Power", "%.2f", sortingPower);
             telemetry.update();

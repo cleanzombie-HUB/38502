@@ -34,7 +34,7 @@ public class PathsPedro {
 
     public PathsPedro(boolean isBlue) {
         PoseFactory poseFactory = isBlue
-                ? PoseFactory.degrees().mirrorX(70.75)
+                ? PoseFactory.degrees().mirrorAroundPoint(72, 72)
                 : PoseFactory.degrees();
 
         start = poseFactory.of(56.6151, 8.6682, 90);

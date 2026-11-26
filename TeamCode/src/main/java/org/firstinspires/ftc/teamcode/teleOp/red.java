@@ -1,10 +1,13 @@
 package org.firstinspires.ftc.teamcode.teleOp;
 
+import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.IMU;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.helper.rawSubsystem;
 
 @TeleOp(name = "Red TeleOp", group = "Competition")
@@ -14,10 +17,16 @@ public class red extends LinearOpMode {
     private DcMotorEx backLeftMotor;
     private DcMotorEx frontRightMotor;
     private DcMotorEx backRightMotor;
+    private IMU imu;
+
+    // Target headings for Hive 1 vs Hive 2 (Opposite Side = 180 degrees / PI radians)
+    private static final double HEADING_HIVE_1 = 0.0;       // Facing Hive 1 (0 Deg)
+    private static final double HEADING_HIVE_2 = Math.PI;  // Facing Hive 2 / Opposite Side (180 Deg)
+    private static final double HEADING_P = 1.5;            // Proportional gain for auto-snap turn
 
     @Override
     public void runOpMode() {
-        // Initialize Drivetrain Motors (Standard FTC Hardware Map, no PedroPathing)
+        // Initialize Drivetrain Motors
         frontLeftMotor = hardwareMap.get(DcMotorEx.class, "frontLeft");
         backLeftMotor = hardwareMap.get(DcMotorEx.class, "backLeft");
         frontRightMotor = hardwareMap.get(DcMotorEx.class, "frontRight");
@@ -28,20 +37,43 @@ public class red extends LinearOpMode {
         frontRightMotor.setDirection(DcMotorSimple.Direction.FORWARD);
         backRightMotor.setDirection(DcMotorSimple.Direction.FORWARD);
 
-        // Initialize Raw Subsystem (No PedroPathing/Odometry dependencies)
+        // Initialize IMU (Control Hub Gyroscope) for Auto-Snap Heading Lock
+        imu = hardwareMap.get(IMU.class, "imu");
+        IMU.Parameters imuParameters = new IMU.Parameters(new RevHubOrientationOnRobot(
+                RevHubOrientationOnRobot.LogoFacingDirection.UP,
+                RevHubOrientationOnRobot.UsbFacingDirection.FORWARD
+        ));
+        imu.initialize(imuParameters);
+
+        // Initialize Raw Subsystem
         rawSubsystem robotSubsystems = new rawSubsystem(hardwareMap);
 
-        telemetry.addData("Status", "Red TeleOp Initialized.");
+        telemetry.addData("Status", "Red TeleOp Initialized (Dual Hive Auto-Snap Enabled).");
         telemetry.update();
 
         waitForStart();
         if (isStopRequested()) return;
 
         while (opModeIsActive()) {
-            // 1. Standard Mecanum Drivetrain Control (Gamepad 1)
+            // 1. Drivetrain Control (Gamepad 1)
             double y = -gamepad1.left_stick_y;
             double x = -gamepad1.left_stick_x * 1.1;
             double rx = -gamepad1.right_stick_x;
+
+            // DUAL-HIVE AUTO-SNAP HEADING LOCK (Gamepad 1)
+            // Hold X = Auto-Snap to Hive 1 (0 Deg)
+            // Hold Y = Auto-Snap to Hive 2 / Opposite Side (180 Deg)
+            boolean snapHive1 = gamepad1.x;
+            boolean snapHive2 = gamepad1.y;
+            double currentHeading = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS);
+
+            if (snapHive1) {
+                double headingError = AngleUnit.normalizeRadians(HEADING_HIVE_1 - currentHeading);
+                rx = Math.max(-1.0, Math.min(1.0, headingError * HEADING_P)); // Snap to Hive 1
+            } else if (snapHive2) {
+                double headingError = AngleUnit.normalizeRadians(HEADING_HIVE_2 - currentHeading);
+                rx = Math.max(-1.0, Math.min(1.0, headingError * HEADING_P)); // Snap to Hive 2 (Opposite side)
+            }
 
             double denominator = Math.max(Math.abs(y) + Math.abs(x) + Math.abs(rx), 1.0);
 
@@ -108,6 +140,8 @@ public class red extends LinearOpMode {
 
             // Telemetry
             telemetry.addData("Alliance", "RED");
+            telemetry.addData("Auto-Snap Target", snapHive1 ? "HIVE 1 (0°)" : (snapHive2 ? "HIVE 2 / OPPOSITE (180°)" : "MANUAL DRIVING"));
+            telemetry.addData("Heading (Deg)", "%.1f", Math.toDegrees(currentHeading));
             telemetry.addData("Shooting Preset", robotSubsystems.getShootingPosition());
             telemetry.addData("Gate Position", "%.2f", robotSubsystems.getGateCurrentPosition());
             telemetry.addData("Ramp Position", "%.2f", robotSubsystems.getRampCurrentPosition());

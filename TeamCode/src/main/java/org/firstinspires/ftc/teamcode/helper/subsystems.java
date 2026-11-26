@@ -5,6 +5,7 @@ import com.pedropathing.revhub.localizers.TwoWheelLocalizer;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.constants.Constants;
@@ -32,6 +33,7 @@ public class subsystems {
     private final DcMotorEx intakeMotor;       // Intake motor (floor pickup)
     private final DcMotorEx sortingMotor;      // Sorting motor (pushes/sorts balls into shooter)
     private final Servo gateServo;           // Servo gate blocking/releasing balls into flywheels
+    private final Servo rampServo;           // Ramp servo lowering/raising intake ramp for flower
 
     // Odometry localizer
     private final TwoWheelLocalizer localizer;
@@ -55,20 +57,24 @@ public class subsystems {
     public static final double GATE_CLOSED = 0.0;
     public static final double GATE_OPEN   = 0.6;
 
-    // Studica Maverick Encoder Specs:
-    // Shooter 1 (Pollen): 3.7:1 Motor Geared UP 2:1 to Flywheel (3298 Max RPM, 51.8 ticks per rev)
-    public static final double SHOOTER1_TICKS_PER_REV = 51.8;
+    // Ramp Servo Position Constants (90 degrees rotation difference)
+    public static final double RAMP_UP   = 0.0; // Stowed up position
+    public static final double RAMP_DOWN = 0.5; // Lowered down position for flower intake
 
-    // Shooter 2 (Nectar): 3.7:1 Motor Geared UP 2:1 to Flywheel (3298 Max RPM, 51.8 ticks per rev)
-    public static final double SHOOTER2_TICKS_PER_REV = 51.8;
+    // Studica Maverick Encoder Specs:
+    // Shooter 1 (Pollen): 1:1 6100 RPM Motor (112.0 4x quadrature ticks/rev)
+    public static final double SHOOTER1_TICKS_PER_REV = 112.0;
+
+    // Shooter 2 (Nectar): 1:1 6100 RPM Motor (112.0 4x quadrature ticks/rev)
+    public static final double SHOOTER2_TICKS_PER_REV = 112.0;
 
     // Preset Target RPM constants
-    public static final double POLLEN_RPM = 2500.0; // Shooter 1 (Max 3298 RPM)
-    public static final double NECTAR_RPM = 2500.0; // Shooter 2 (Max 3298 RPM)
+    public static final double POLLEN_RPM = 3800.0; // Shooter 1 (Max 6100 RPM)
+    public static final double NECTAR_RPM = 4400.0; // Shooter 2 (Max 6100 RPM)
 
-    // Motor Power Constants (Intake = 100%, Sorting = 40% for controlled feeding)
+    // Motor Power Constants (Full Power = 1.0)
     public static final double INTAKE_POWER  = 1.0;
-    public static final double SORTING_POWER = 0.40; // Controlled sorting power gives flywheel time to spin up
+    public static final double SORTING_POWER = 1.0;
 
     public subsystems(HardwareMap hardwareMap, Alliance alliance) {
         this.alliance = alliance;
@@ -89,15 +95,23 @@ public class subsystems {
         intakeMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         sortingMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
+        // Tuned Feedforward & Proportional Gain (F=13.5, P=12.0, I=0.0)
+        PIDFCoefficients flywheelPidf = new PIDFCoefficients(12.0, 0.0, 0.0, 13.5);
+        shooter1Pollen.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, flywheelPidf);
+        shooter2Nectar.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, flywheelPidf);
+
         // Set motor directions
         shooter1Pollen.setDirection(DcMotorEx.Direction.REVERSE);
         shooter2Nectar.setDirection(DcMotorEx.Direction.FORWARD);
         intakeMotor.setDirection(DcMotorEx.Direction.FORWARD);
         sortingMotor.setDirection(DcMotorEx.Direction.FORWARD);
 
-        // Initialize Servo Gate
+        // Initialize Servos
         gateServo = hardwareMap.get(Servo.class, "gateServo");
         gateServo.setPosition(GATE_CLOSED); // Default gate is CLOSED
+
+        rampServo = hardwareMap.get(Servo.class, "rampServo");
+        rampServo.setPosition(RAMP_UP); // Default ramp is UP
     }
 
     private double rpmToTicksPerSec(double rpm, double ticksPerRev) {
@@ -132,6 +146,19 @@ public class subsystems {
 
     public void setGatePosition(double position) {
         gateServo.setPosition(position);
+    }
+
+    // Ramp Servo Controls (Flower Intake)
+    public void lowerRamp() {
+        rampServo.setPosition(RAMP_DOWN);
+    }
+
+    public void raiseRamp() {
+        rampServo.setPosition(RAMP_UP);
+    }
+
+    public void setRampPosition(double position) {
+        rampServo.setPosition(position);
     }
 
     /**
@@ -209,4 +236,5 @@ public class subsystems {
     }
 
     public double getGateCurrentPosition() { return gateServo.getPosition(); }
+    public double getRampCurrentPosition() { return rampServo.getPosition(); }
 }

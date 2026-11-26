@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.helper;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 
 public class rawSubsystem {
@@ -29,11 +30,11 @@ public class rawSubsystem {
     private ShootingPosition currentPosition = ShootingPosition.CLOSE;
 
     // Studica Maverick Encoder Specs:
-    // Shooter 1 (Pollen): 3.7:1 Motor Geared UP 2:1 to Flywheel (3298 Max RPM, 51.8 ticks per rev)
-    public static final double SHOOTER1_TICKS_PER_REV = 51.8;
+    // Shooter 1 (Pollen): 1:1 6100 RPM Motor (112.0 4x quadrature ticks/rev)
+    public static final double SHOOTER1_TICKS_PER_REV = 112.0;
 
-    // Shooter 2 (Nectar): 3.7:1 Motor Geared UP 2:1 to Flywheel (3298 Max RPM, 51.8 ticks per rev)
-    public static final double SHOOTER2_TICKS_PER_REV = 51.8;
+    // Shooter 2 (Nectar): 1:1 6100 RPM Motor (112.0 4x quadrature ticks/rev)
+    public static final double SHOOTER2_TICKS_PER_REV = 112.0;
 
     // Servo Gate Position Constants (Adjust based on mechanical setup)
     public static final double GATE_CLOSED = 0.0;
@@ -43,13 +44,13 @@ public class rawSubsystem {
     public static final double RAMP_UP   = 0.0; // Stowed up position
     public static final double RAMP_DOWN = 0.5; // Lowered down position for flower intake
 
-    // Preset Target RPM Constants for Pollen (Shooter 1: Max 3298 RPM, realistic cap ~2500 RPM)
-    public static final double POLLEN_CLOSE_RPM = 1800.0;
-    public static final double POLLEN_FAR_RPM   = 2500.0;
+    // Preset Target RPM Constants for Pollen (Shooter 1: Max 6100 RPM)
+    public static final double POLLEN_CLOSE_RPM = 3400.0;
+    public static final double POLLEN_FAR_RPM   = 4600.0;
 
-    // Preset Target RPM Constants for Nectar (Shooter 2: Max 3298 RPM, realistic cap ~2500 RPM)
-    public static final double NECTAR_CLOSE_RPM = 1800.0;
-    public static final double NECTAR_FAR_RPM   = 2500.0;
+    // Preset Target RPM Constants for Nectar (Shooter 2: Max 6100 RPM)
+    public static final double NECTAR_CLOSE_RPM = 3600.0;
+    public static final double NECTAR_FAR_RPM   = 4800.0;
 
     // Motor Power Constants (Intake = 100%, Sorting = 40% for controlled feeding)
     public static final double INTAKE_POWER  = 1.0;
@@ -67,6 +68,11 @@ public class rawSubsystem {
         shooter2Nectar.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         intakeMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         sortingMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+        // Tuned Feedforward & Proportional Gain (F=13.5, P=12.0, I=0.0)
+        PIDFCoefficients flywheelPidf = new PIDFCoefficients(12.0, 0.0, 0.0, 13.5);
+        shooter1Pollen.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, flywheelPidf);
+        shooter2Nectar.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, flywheelPidf);
 
         // Set motor directions
         shooter1Pollen.setDirection(DcMotorEx.Direction.REVERSE);
@@ -147,6 +153,29 @@ public class rawSubsystem {
         closeGate();
     }
 
+    // Autonomous Helper Methods
+    public void shootPollenAuto() {
+        startShooter1Pollen();
+        openGate();
+        sortingIn();
+    }
+
+    public void stopShooterAuto() {
+        stopShooters();
+        stopSorting();
+    }
+
+    public void intakeAuto() {
+        lowerRamp();
+        closeGate();
+        intakeIn();
+    }
+
+    public void stopIntakeAuto() {
+        stopIntake();
+        raiseRamp();
+    }
+
     // Intake Controls
     public void setIntakePower(double power) {
         intakeMotor.setPower(power);
@@ -187,45 +216,5 @@ public class rawSubsystem {
 
     public double getRampCurrentPosition() {
         return rampServo.getPosition();
-    }
-
-    // =========================================================================
-    // AUTONOMOUS COMBINED HELPER METHODS
-    // =========================================================================
-
-    /**
-     * Autonomous Helper: Lowers ramp, starts intake motor in, and runs sorting motor in.
-     */
-    public void intakeAuto() {
-        lowerRamp();
-        intakeIn();
-        sortingIn();
-    }
-
-    /**
-     * Autonomous Helper: Stops intake motor, stops sorting motor, and raises ramp back up.
-     */
-    public void stopIntakeAuto() {
-        stopIntake();
-        stopSorting();
-        raiseRamp();
-    }
-
-    /**
-     * Autonomous Helper: Starts Pollen shooter flywheel, opens gate servo, and runs sorting motor.
-     */
-    public void shootPollenAuto() {
-        startShooter1Pollen();
-        openGate();
-        sortingIn();
-    }
-
-    /**
-     * Autonomous Helper: Stops flywheels, sorting motor, and closes gate servo.
-     */
-    public void stopShooterAuto() {
-        stopShooters();
-        stopSorting();
-        closeGate();
     }
 }
