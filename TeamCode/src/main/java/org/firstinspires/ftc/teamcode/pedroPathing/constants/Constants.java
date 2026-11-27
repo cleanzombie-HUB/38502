@@ -46,8 +46,8 @@ public class Constants {
 
     public static TwoWheelConfig createTwoWheelConfig() {
         return new TwoWheelConfig(c -> {
-            c.xPodName.set("sorting"); // Hardware map port for parallel pod encoder (shared with sorting motor)
-            c.yPodName.set("intake"); // Hardware map port for perpendicular pod encoder (shared with shooter1 motor)
+            c.xPodName.set("intake"); // Hardware map port for parallel pod encoder (shared with sorting motor)
+            c.yPodName.set("sorting"); // Hardware map port for perpendicular pod encoder (shared with intake motor)
             c.imuName.set("imu");
 
             c.xPodOffset.set(X_POD_OFFSET);
@@ -60,8 +60,8 @@ public class Constants {
             c.yPodDirection.set(Encoder.REVERSE);
 
             c.imu.set(new RevHubIMU(new RevHubOrientationOnRobot(
-                    RevHubOrientationOnRobot.LogoFacingDirection.UP,
-                    RevHubOrientationOnRobot.UsbFacingDirection.FORWARD
+                    RevHubOrientationOnRobot.LogoFacingDirection.LEFT,
+                    RevHubOrientationOnRobot.UsbFacingDirection.BACKWARD
             )));
         });
     }

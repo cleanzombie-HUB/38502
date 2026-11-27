@@ -53,9 +53,12 @@ public class subsystems {
     private static final double BLUE_HIVE_2_X = 0.0;
     private static final double BLUE_HIVE_2_Y = 108.0;
 
-    // Ramp Servo Position Constants (90 degrees rotation difference)
-    public static final double RAMP_UP   = 0.0; // Stowed up position
-    public static final double RAMP_DOWN = 0.5; // Lowered down position for flower intake
+    // Studica 75002 Smart Servo Total Motion Range in Degrees (Default 270.0°)
+    public static final double RAMP_SERVO_RANGE_DEGREES = 270.0;
+
+    // Ramp Angles in DEGREES
+    public static final double RAMP_UP_DEGREES   = 0.0;   // 0° Stowed up position
+    public static final double RAMP_DOWN_DEGREES = 200.0; // 200° Lowered down position for flower intake
 
     // Studica Maverick Encoder Specs:
     // Shooter 1 (Pollen): 1:1 6100 RPM Motor (112.0 4x quadrature ticks/rev)
@@ -116,6 +119,13 @@ public class subsystems {
         return (rpm * ticksPerRev) / 60.0;
     }
 
+    /**
+     * Converts angle in DEGREES to FTC Servo position (0.0 to 1.0)
+     */
+    private double degreesToServoPosition(double degrees) {
+        return Math.max(0.0, Math.min(1.0, degrees / RAMP_SERVO_RANGE_DEGREES));
+    }
+
     public void updateOdometry() {
         if (localizer != null) {
             localizer.update();
@@ -133,20 +143,19 @@ public class subsystems {
         return activeHive;
     }
 
-    // Ramp Servo Controls (Flower Intake)
+    // Ramp Servo Controls (Specified directly in DEGREES)
     public void lowerRamp() {
-        rampServoLeft.setPosition(RAMP_DOWN);
-        rampServoRight.setPosition(RAMP_DOWN);
+        setRampAngle(RAMP_DOWN_DEGREES); // 200°
     }
 
     public void raiseRamp() {
-        rampServoLeft.setPosition(RAMP_UP);
-        rampServoRight.setPosition(RAMP_UP);
+        setRampAngle(RAMP_UP_DEGREES); // 0°
     }
 
-    public void setRampPosition(double position) {
-        rampServoLeft.setPosition(position);
-        rampServoRight.setPosition(position);
+    public void setRampAngle(double degrees) {
+        double pos = degreesToServoPosition(degrees);
+        rampServoLeft.setPosition(pos);
+        rampServoRight.setPosition(pos);
     }
 
     /**
@@ -223,4 +232,5 @@ public class subsystems {
     }
 
     public double getRampCurrentPosition() { return rampServoLeft.getPosition(); }
+    public double getRampCurrentDegrees() { return rampServoLeft.getPosition() * RAMP_SERVO_RANGE_DEGREES; }
 }

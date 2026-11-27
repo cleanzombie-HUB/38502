@@ -40,8 +40,8 @@ public class blue extends LinearOpMode {
         // Initialize IMU (Control Hub Gyroscope) for Auto-Snap Heading Lock
         imu = hardwareMap.get(IMU.class, "imu");
         IMU.Parameters imuParameters = new IMU.Parameters(new RevHubOrientationOnRobot(
-                RevHubOrientationOnRobot.LogoFacingDirection.UP,
-                RevHubOrientationOnRobot.UsbFacingDirection.FORWARD
+                RevHubOrientationOnRobot.LogoFacingDirection.LEFT,
+                RevHubOrientationOnRobot.UsbFacingDirection.BACKWARD
         ));
         imu.initialize(imuParameters);
 

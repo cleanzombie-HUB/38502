@@ -18,7 +18,7 @@ import org.firstinspires.ftc.teamcode.pedroPathing.constants.Constants;
 @Autonomous(name = "Pedro Pathing: Forward Velocity Tuner", group = "Pedro Pathing Tuning")
 public class ForwardVelocityTuner extends LinearOpMode {
 
-    public static double DISTANCE = 48.0; // Target distance in inches
+    public static double DISTANCE = 24.0; // Target distance in inches
 
     @Override
     public void runOpMode() {

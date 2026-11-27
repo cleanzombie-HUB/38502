@@ -20,6 +20,7 @@ import org.firstinspires.ftc.teamcode.pedroPathing.constants.Constants;
 public class blueAngle extends LinearOpMode {
 
     private static double MAX_POWER = 1.0;
+    private static double MIN_POWER = 0.4;
 
     private Follower follower;
     private ForesightConfig foresightConfig;
@@ -27,72 +28,86 @@ public class blueAngle extends LinearOpMode {
 
     private int pathState = 0;
 
+    public void setMaxPower(double maxPower) {
+        if (foresightConfig != null) {
+            foresightConfig.maxPathSpeed.set(maxPower);
+        }
+    }
+
     public void setPathState(int pState) {
         pathState = pState;
     }
 
     /**
-     * Sequential path execution for path testing only.
+     * Sequential path execution for path testing only with power capping.
      */
     public void autonomousPathUpdate() {
         switch (pathState) {
             case 0:
-                // Start 1: p1toflower
+                // Start 1: p1toflower (MAX POWER)
+                setMaxPower(MAX_POWER);
                 follower.follow(pathsPedro.p1toflower());
                 setPathState(1);
                 break;
 
             case 1:
-                // Start 2: p2flowerintake
+                // Start 2: p2flowerintake (MIN POWER = 0.4)
                 if (!follower.isBusy()) {
+                    setMaxPower(MIN_POWER);
                     follower.follow(pathsPedro.p2flowerintake());
                     setPathState(2);
                 }
                 break;
 
             case 2:
-                // Start 3: p3toshoot
+                // Start 3: p3toshoot (MAX POWER)
                 if (!follower.isBusy()) {
+                    setMaxPower(MAX_POWER);
                     follower.follow(pathsPedro.p3toshoot());
                     setPathState(3);
                 }
                 break;
 
             case 3:
-                // Start 4: p4shoot
+                // Start 4: p4shoot (MAX POWER)
                 if (!follower.isBusy()) {
+                    setMaxPower(MAX_POWER);
                     follower.follow(pathsPedro.p4shoot());
                     setPathState(4);
                 }
                 break;
 
             case 4:
-                // Start 5: p5tointake
+                // Start 5: p5tointake (MAX POWER)
                 if (!follower.isBusy()) {
+                    setMaxPower(MAX_POWER);
                     follower.follow(pathsPedro.p5tointake());
                     setPathState(5);
                 }
                 break;
 
             case 5:
-                // Start 6: p6flowerintake
+                // Start 6: p6flowerintake (MIN POWER = 0.4)
                 if (!follower.isBusy()) {
+                    setMaxPower(MIN_POWER);
                     follower.follow(pathsPedro.p6flowerintake());
                     setPathState(6);
                 }
                 break;
 
             case 6:
-                // Start 7: p7shoot
+                // Start 7: p7shoot (MAX POWER)
                 if (!follower.isBusy()) {
+                    setMaxPower(MAX_POWER);
                     follower.follow(pathsPedro.p7shoot());
                     setPathState(7);
                 }
                 break;
 
             case 7:
-                // Start 8: p8park
+                // Start 8: p8park (MAX POWER)
                 if (!follower.isBusy()) {
+                    setMaxPower(MAX_POWER);
                     follower.follow(pathsPedro.p8park());
                     setPathState(8);
                 }

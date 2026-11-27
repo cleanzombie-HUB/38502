@@ -29,18 +29,22 @@ public class testOp extends LinearOpMode {
 
     // Studica Maverick Encoder Specs:
     // Shooter 1 (Pollen): 1:1 6100 RPM Motor (112.0 4x quadrature ticks per rev)
-    public static final double SHOOTER1_TICKS_PER_REV = 112.0;
+    public static final double SHOOTER1_TICKS_PER_REV = 24.0;
 
     // Shooter 2 (Nectar): 1:1 6100 RPM Motor (112.0 4x quadrature ticks per rev)
-    public static final double SHOOTER2_TICKS_PER_REV = 112.0;
+    public static final double SHOOTER2_TICKS_PER_REV = 24.0;
 
     // Target Headings for Auto-Snap (Hive 1 = 0 Deg, Hive 2 = 180 Deg)
     private static final double HEADING_HIVE_1 = 0.0;
     private static final double HEADING_HIVE_2 = Math.PI;
     private static final double HEADING_P = 1.5;
 
-    // Dynamic Target RPM (Default 500 RPM, adjustable live using Gamepad 2 D-Pad)
-    private double testRpm = 500.0;
+    // Independent Dynamic Target RPMs for Pollen and Nectar
+    private double pollenRpm = 1000.0;
+    private double nectarRpm = 1000.0;
+
+    // Active shooter mode for D-Pad tuning (Default: POLLEN)
+    private boolean tuningNectar = false;
 
     // Button state tracking for debouncing D-Pad presses
     private boolean lastDpadUp = false;
@@ -69,11 +73,11 @@ public class testOp extends LinearOpMode {
         frontRightMotor.setDirection(DcMotorSimple.Direction.FORWARD);
         backRightMotor.setDirection(DcMotorSimple.Direction.FORWARD);
 
-        // 2. Initialize IMU (Control Hub Gyroscope) for Auto-Snap Heading Lock
+        // 2. Initialize IMU (Control Hub Gyroscope: Logo LEFT, USB BACKWARD)
         imu = hardwareMap.get(IMU.class, "imu");
         IMU.Parameters imuParameters = new IMU.Parameters(new RevHubOrientationOnRobot(
-                RevHubOrientationOnRobot.LogoFacingDirection.UP,
-                RevHubOrientationOnRobot.UsbFacingDirection.FORWARD
+                RevHubOrientationOnRobot.LogoFacingDirection.LEFT,
+                RevHubOrientationOnRobot.UsbFacingDirection.BACKWARD
         ));
         imu.initialize(imuParameters);
 
@@ -92,12 +96,12 @@ public class testOp extends LinearOpMode {
         shooter2Nectar.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         shooter2Nectar.setDirection(DcMotorEx.Direction.REVERSE);
 
-        // Tuned Feedforward & Proportional Gain (F=13.5, P=12.0) to lock onto exact target RPM instantly
+        // Tuned Feedforward & Proportional Gain (F=13.5, P=12.0)
         PIDFCoefficients flywheelPidf = new PIDFCoefficients(12.0, 0.0, 0.0, 13.5);
         shooter1Pollen.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, flywheelPidf);
         shooter2Nectar.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, flywheelPidf);
 
-        telemetry.addData("Status", "Test OpMode Initialized (Instant Speed Response Enabled).");
+        telemetry.addData("Status", "Test OpMode Initialized (Independent Pollen & Nectar RPM Tuning).");
         telemetry.update();
 
         waitForStart();
@@ -108,8 +112,8 @@ public class testOp extends LinearOpMode {
             // GAMEPAD 1: DRIVER CONTROLS (Driving, Turning, & Auto-Snap Heading Lock)
             // =========================================================================
             double y = -gamepad1.left_stick_y;
-            double x = -gamepad1.left_stick_x * 1.1; // Reversed strafe
-            double rx = -gamepad1.right_stick_x;     // Reversed turn
+            double x = gamepad1.left_stick_x * 1.1;
+            double rx = gamepad1.right_stick_x;
 
             // Auto-Snap Heading Lock (Hold Gamepad 1 X for Hive 1, Y for Hive 2 / Opposite)
             boolean snapHive1 = gamepad1.x;
@@ -135,20 +139,27 @@ public class testOp extends LinearOpMode {
             // GAMEPAD 2: OPERATOR CONTROLS (Intake, Sorting, Shooters, & Live RPM Tuning)
             // =========================================================================
 
-            // 1. Live Target RPM Adjustment (Gamepad 2 D-Pad)
+            // 1. Select Active Tuning Mode (RB = Pollen Tuning Mode, B = Nectar Tuning Mode)
+            if (gamepad2.right_bumper) {
+                tuningNectar = false; // Tune Pollen
+            } else if (gamepad2.b && !gamepad2.start) {
+                tuningNectar = true;  // Tune Nectar
+            }
+
+            // Live Target RPM Adjustment via D-Pad (+/-500 RPM or +/-100 RPM)
             boolean currentDpadUp = gamepad2.dpad_up;
             boolean currentDpadDown = gamepad2.dpad_down;
             boolean currentDpadRight = gamepad2.dpad_right;
             boolean currentDpadLeft = gamepad2.dpad_left;
 
             if (currentDpadUp && !lastDpadUp) {
-                testRpm += 500.0; // D-Pad Up = +500 RPM
+                if (tuningNectar) nectarRpm += 500.0; else pollenRpm += 500.0;
             } else if (currentDpadDown && !lastDpadDown) {
-                testRpm = Math.max(0.0, testRpm - 500.0); // D-Pad Down = -500 RPM
+                if (tuningNectar) nectarRpm = Math.max(0.0, nectarRpm - 500.0); else pollenRpm = Math.max(0.0, pollenRpm - 500.0);
             } else if (currentDpadRight && !lastDpadRight) {
-                testRpm += 100.0; // D-Pad Right = +100 RPM
+                if (tuningNectar) nectarRpm += 100.0; else pollenRpm += 100.0;
             } else if (currentDpadLeft && !lastDpadLeft) {
-                testRpm = Math.max(0.0, testRpm - 100.0); // D-Pad Left = -100 RPM
+                if (tuningNectar) nectarRpm = Math.max(0.0, nectarRpm - 100.0); else pollenRpm = Math.max(0.0, pollenRpm - 100.0);
             }
 
             lastDpadUp = currentDpadUp;
@@ -156,12 +167,12 @@ public class testOp extends LinearOpMode {
             lastDpadRight = currentDpadRight;
             lastDpadLeft = currentDpadLeft;
 
-            // 2. Shooter Test Controls (Instant Response via Feedforward F=13.5, P=12.0)
+            // 2. Shooter Test Controls (Hold RB = Run Pollen at pollenRpm, Hold B = Run Nectar at nectarRpm)
             if (gamepad2.right_bumper) {
-                shooter1Pollen.setVelocity(rpmToTicksPerSec(testRpm, SHOOTER1_TICKS_PER_REV));
+                shooter1Pollen.setVelocity(rpmToTicksPerSec(pollenRpm, SHOOTER1_TICKS_PER_REV));
                 shooter2Nectar.setVelocity(0.0);
             } else if (gamepad2.b && !gamepad2.start) {
-                shooter2Nectar.setVelocity(rpmToTicksPerSec(testRpm, SHOOTER2_TICKS_PER_REV));
+                shooter2Nectar.setVelocity(rpmToTicksPerSec(nectarRpm, SHOOTER2_TICKS_PER_REV));
                 shooter1Pollen.setVelocity(0.0);
             } else if (gamepad2.left_bumper) {
                 shooter1Pollen.setVelocity(0.0);
@@ -187,9 +198,11 @@ public class testOp extends LinearOpMode {
             // =========================================================================
             // LIVE TELEMETRY REPORTING
             // =========================================================================
-            telemetry.addData("Selected Target RPM", "%.0f RPM", testRpm);
-            telemetry.addData("Shooter 1 (Pollen 1:1 6100) Actual RPM", "%.0f RPM", ticksPerSecToRpm(shooter1Pollen.getVelocity(), SHOOTER1_TICKS_PER_REV));
-            telemetry.addData("Shooter 2 (Nectar 1:1 6100) Actual RPM", "%.0f RPM", ticksPerSecToRpm(shooter2Nectar.getVelocity(), SHOOTER2_TICKS_PER_REV));
+            telemetry.addData("Active Tuning Shooter", tuningNectar ? "NECTAR (Shooter 2)" : "POLLEN (Shooter 1)");
+            telemetry.addData("Pollen Target RPM", "%.0f RPM", pollenRpm);
+            telemetry.addData("Pollen Actual RPM", "%.0f RPM", ticksPerSecToRpm(shooter1Pollen.getVelocity(), SHOOTER1_TICKS_PER_REV));
+            telemetry.addData("Nectar Target RPM", "%.0f RPM", nectarRpm);
+            telemetry.addData("Nectar Actual RPM", "%.0f RPM", ticksPerSecToRpm(shooter2Nectar.getVelocity(), SHOOTER2_TICKS_PER_REV));
             telemetry.addData("Intake Power", "%.2f", intakePower);
             telemetry.addData("Sorting Power", "%.2f", sortingPower);
             telemetry.update();
