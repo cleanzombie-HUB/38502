@@ -8,177 +8,98 @@ import com.pedropathing.revhub.drivetrains.Mecanum;
 import com.pedropathing.revhub.localizers.TwoWheelLocalizer;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.helper.PathsPedro;
 import org.firstinspires.ftc.teamcode.helper.RobotState;
-import org.firstinspires.ftc.teamcode.helper.rawSubsystem;
 import org.firstinspires.ftc.teamcode.pedroPathing.constants.Constants;
 
 /**
- * Autonomous OpMode for Blue Alliance using BlueFlowerAngle Pedro Pathing (mirrored).
+ * Autonomous OpMode for Blue Alliance testing only Pedro Pathing (mirrored).
  */
-@Autonomous(name = "Blue Angle", group = "Flower")
+@Autonomous(name = "Blue Angle (Path Test)", group = "Flower")
 public class blueAngle extends LinearOpMode {
 
     private static double MAX_POWER = 1.0;
-    private static double MIN_POWER = 0.6;
 
     private Follower follower;
     private ForesightConfig foresightConfig;
     private PathsPedro.BlueFlowerAngle pathsPedro;
-    private rawSubsystem robotSubsystems;
-    private ElapsedTime stateTimer;
 
     private int pathState = 0;
-
-    public void setMaxPower(double maxPower) {
-        MAX_POWER = maxPower;
-        if (foresightConfig != null) {
-            foresightConfig.maxPathSpeed.set(maxPower);
-        }
-    }
 
     public void setPathState(int pState) {
         pathState = pState;
     }
 
     /**
-     * Autonomous state machine logic.
+     * Sequential path execution for path testing only.
      */
     public void autonomousPathUpdate() {
         switch (pathState) {
             case 0:
-                // Shoot preloaded 4 pollen before moving
-                robotSubsystems.shootPollenAuto();
-                stateTimer.reset();
+                // Start 1: p1toflower
+                follower.follow(pathsPedro.p1toflower());
                 setPathState(1);
                 break;
 
             case 1:
-                // Wait 2 seconds for preloaded pollen to shoot, then stop shooters and start p1toflower
-                if (stateTimer.seconds() >= 2.0) {
-                    robotSubsystems.stopShooterAuto();
-
-                    setMaxPower(MAX_POWER);
-                    follower.follow(pathsPedro.p1toflower());
+                // Start 2: p2flowerintake
+                if (!follower.isBusy()) {
+                    follower.follow(pathsPedro.p2flowerintake());
                     setPathState(2);
                 }
                 break;
 
             case 2:
-                // After p1toflower: put intake ramp down, start intake, and follow p2flowerintake
+                // Start 3: p3toshoot
                 if (!follower.isBusy()) {
-                    robotSubsystems.lowerRamp();
-                    robotSubsystems.intakeAuto();
-
-                    setMaxPower(MIN_POWER);
-                    follower.follow(pathsPedro.p2flowerintake());
+                    follower.follow(pathsPedro.p3toshoot());
                     setPathState(3);
                 }
                 break;
 
             case 3:
-                // At end of p2flowerintake: reset timer to wait for intake
+                // Start 4: p4shoot
                 if (!follower.isBusy()) {
-                    stateTimer.reset();
+                    follower.follow(pathsPedro.p4shoot());
                     setPathState(4);
                 }
                 break;
 
             case 4:
-                // Wait 2 seconds to fully intake, then stop intake and follow p3toshoot
-                if (stateTimer.seconds() >= 2.0) {
-                    robotSubsystems.stopIntakeAuto();
-
-                    setMaxPower(MAX_POWER);
-                    follower.follow(pathsPedro.p3toshoot());
+                // Start 5: p5tointake
+                if (!follower.isBusy()) {
+                    follower.follow(pathsPedro.p5tointake());
                     setPathState(5);
                 }
                 break;
 
             case 5:
-                // Follow p4shoot to driving position for shooting
+                // Start 6: p6flowerintake
                 if (!follower.isBusy()) {
-                    setMaxPower(MAX_POWER);
-                    follower.follow(pathsPedro.p4shoot());
+                    follower.follow(pathsPedro.p6flowerintake());
                     setPathState(6);
                 }
                 break;
 
             case 6:
-                // At end of p4shoot: shoot pollen
+                // Start 7: p7shoot
                 if (!follower.isBusy()) {
-                    robotSubsystems.shootPollenAuto();
-                    stateTimer.reset();
+                    follower.follow(pathsPedro.p7shoot());
                     setPathState(7);
                 }
                 break;
 
             case 7:
-                // Wait 2 seconds for shooting, then put ramp down, stop shooters, and follow p5tointake
-                if (stateTimer.seconds() >= 2.0) {
-                    robotSubsystems.stopShooterAuto();
-                    robotSubsystems.lowerRamp();
-
-                    setMaxPower(MIN_POWER);
-                    follower.follow(pathsPedro.p5tointake());
+                // Start 8: p8park
+                if (!follower.isBusy()) {
+                    follower.follow(pathsPedro.p8park());
                     setPathState(8);
                 }
                 break;
 
             case 8:
-                // Start intake and follow p6flowerintake
-                if (!follower.isBusy()) {
-                    robotSubsystems.intakeAuto();
-
-                    setMaxPower(MAX_POWER);
-                    follower.follow(pathsPedro.p6flowerintake());
-                    setPathState(9);
-                }
-                break;
-
-            case 9:
-                // At end of p6flowerintake: reset timer to wait for intake
-                if (!follower.isBusy()) {
-                    stateTimer.reset();
-                    setPathState(10);
-                }
-                break;
-
-            case 10:
-                // Wait 2 seconds to fully intake, then stop intake and follow p7shoot
-                if (stateTimer.seconds() >= 2.0) {
-                    robotSubsystems.stopIntakeAuto();
-
-                    setMaxPower(MAX_POWER);
-                    follower.follow(pathsPedro.p7shoot());
-                    setPathState(11);
-                }
-                break;
-
-            case 11:
-                // At end of p7shoot: shoot pollen again
-                if (!follower.isBusy()) {
-                    robotSubsystems.shootPollenAuto();
-                    stateTimer.reset();
-                    setPathState(12);
-                }
-                break;
-
-            case 12:
-                // Wait 2 seconds while shooting, then stop shooters and follow p8park
-                if (stateTimer.seconds() >= 2.0) {
-                    robotSubsystems.stopShooterAuto();
-
-                    setMaxPower(MAX_POWER);
-                    follower.follow(pathsPedro.p8park());
-                    setPathState(13);
-                }
-                break;
-
-            case 13:
-                // End of p8park: complete sequence
+                // Path sequence complete
                 if (!follower.isBusy()) {
                     setPathState(-1);
                 }
@@ -200,13 +121,10 @@ public class blueAngle extends LinearOpMode {
         Foresight foresight = new Foresight(foresightConfig);
         follower = new Follower(localizer, drivetrain, foresight);
 
-        robotSubsystems = new rawSubsystem(hardwareMap);
         pathsPedro = new PathsPedro.BlueFlowerAngle();
-        stateTimer = new ElapsedTime();
-
         follower.setPose(pathsPedro.getStartPose());
 
-        telemetry.addData("Status", "Blue Angle Auto Initialized");
+        telemetry.addData("Status", "Blue Angle Path Test Initialized");
         telemetry.addData("Start Pose X", "%.2f", pathsPedro.getStartPose().x());
         telemetry.addData("Start Pose Y", "%.2f", pathsPedro.getStartPose().y());
         telemetry.addData("Start Heading (deg)", "%.2f", Math.toDegrees(pathsPedro.getStartPose().heading()));

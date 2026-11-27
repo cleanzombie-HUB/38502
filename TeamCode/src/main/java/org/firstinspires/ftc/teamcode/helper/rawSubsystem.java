@@ -23,8 +23,8 @@ public class rawSubsystem {
     private final DcMotorEx shooter2Nectar;  // Shooter 2: Nectar
     private final DcMotorEx intakeMotor;       // Intake motor (floor pickup)
     private final DcMotorEx sortingMotor;      // Sorting motor (pushes/sorts balls into shooter)
-    private final Servo gateServo;           // Servo gate blocking/releasing balls into flywheels
-    private final Servo rampServo;           // Ramp servo lowering/raising intake ramp for flower
+    private final Servo rampServoLeft;       // Left ramp servo
+    private final Servo rampServoRight;      // Right ramp servo (reversed orientation)
 
     // Current selected shooting position (Default: CLOSE)
     private ShootingPosition currentPosition = ShootingPosition.CLOSE;
@@ -36,19 +36,15 @@ public class rawSubsystem {
     // Shooter 2 (Nectar): 1:1 6100 RPM Motor (112.0 4x quadrature ticks/rev)
     public static final double SHOOTER2_TICKS_PER_REV = 112.0;
 
-    // Servo Gate Position Constants (Adjust based on mechanical setup)
-    public static final double GATE_CLOSED = 0.0;
-    public static final double GATE_OPEN   = 0.6;
-
-    // Ramp Servo Position Constants (90 degrees rotation difference)
+    // Ramp Servo Position Constants (200 degrees rotation difference on 270° servo)
     public static final double RAMP_UP   = 0.0; // Stowed up position
-    public static final double RAMP_DOWN = 0.5; // Lowered down position for flower intake
+    public static final double RAMP_DOWN = 0.74; // Lowered down position for flower intake
 
-    // Preset Target RPM Constants for Pollen (Shooter 1: Max 6100 RPM)
+    // Preset Target RPM Constants for Pollen (Shooter 1: 1:1 6100 RPM Motor)
     public static final double POLLEN_CLOSE_RPM = 3400.0;
     public static final double POLLEN_FAR_RPM   = 4600.0;
 
-    // Preset Target RPM Constants for Nectar (Shooter 2: Max 6100 RPM)
+    // Preset Target RPM Constants for Nectar (Shooter 2: 1:1 6100 RPM Motor)
     public static final double NECTAR_CLOSE_RPM = 3600.0;
     public static final double NECTAR_FAR_RPM   = 4800.0;
 
@@ -80,12 +76,14 @@ public class rawSubsystem {
         intakeMotor.setDirection(DcMotorEx.Direction.FORWARD);
         sortingMotor.setDirection(DcMotorEx.Direction.FORWARD);
 
-        // Initialize Servos
-        gateServo = hardwareMap.get(Servo.class, "gateServo");
-        gateServo.setPosition(GATE_CLOSED); // Default gate is CLOSED
+        // Initialize Dual Ramp Servos ("rampLeft" and "rampRight")
+        rampServoLeft = hardwareMap.get(Servo.class, "rampLeft");
+        rampServoRight = hardwareMap.get(Servo.class, "rampRight");
 
-        rampServo = hardwareMap.get(Servo.class, "rampServo");
-        rampServo.setPosition(RAMP_UP); // Default ramp is UP
+        rampServoLeft.setDirection(Servo.Direction.FORWARD);
+        rampServoRight.setDirection(Servo.Direction.REVERSE);
+
+        raiseRamp();
     }
 
     private double rpmToTicksPerSec(double rpm, double ticksPerRev) {
@@ -100,30 +98,20 @@ public class rawSubsystem {
         return currentPosition;
     }
 
-    // Servo Gate Controls
-    public void openGate() {
-        gateServo.setPosition(GATE_OPEN);
-    }
-
-    public void closeGate() {
-        gateServo.setPosition(GATE_CLOSED);
-    }
-
-    public void setGatePosition(double position) {
-        gateServo.setPosition(position);
-    }
-
     // Ramp Servo Controls (Flower Intake)
     public void lowerRamp() {
-        rampServo.setPosition(RAMP_DOWN);
+        rampServoLeft.setPosition(RAMP_DOWN);
+        rampServoRight.setPosition(RAMP_DOWN);
     }
 
     public void raiseRamp() {
-        rampServo.setPosition(RAMP_UP);
+        rampServoLeft.setPosition(RAMP_UP);
+        rampServoRight.setPosition(RAMP_UP);
     }
 
     public void setRampPosition(double position) {
-        rampServo.setPosition(position);
+        rampServoLeft.setPosition(position);
+        rampServoRight.setPosition(position);
     }
 
     /**
@@ -145,18 +133,16 @@ public class rawSubsystem {
     }
 
     /**
-     * Stop both shooters and close gate
+     * Stop both shooters
      */
     public void stopShooters() {
         shooter1Pollen.setVelocity(0.0);
         shooter2Nectar.setVelocity(0.0);
-        closeGate();
     }
 
     // Autonomous Helper Methods
     public void shootPollenAuto() {
         startShooter1Pollen();
-        openGate();
         sortingIn();
     }
 
@@ -167,7 +153,6 @@ public class rawSubsystem {
 
     public void intakeAuto() {
         lowerRamp();
-        closeGate();
         intakeIn();
     }
 
@@ -210,11 +195,7 @@ public class rawSubsystem {
         sortingMotor.setPower(0.0);
     }
 
-    public double getGateCurrentPosition() {
-        return gateServo.getPosition();
-    }
-
     public double getRampCurrentPosition() {
-        return rampServo.getPosition();
+        return rampServoLeft.getPosition();
     }
 }

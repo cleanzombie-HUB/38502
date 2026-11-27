@@ -32,8 +32,8 @@ public class subsystems {
     private final DcMotorEx shooter2Nectar;  // Shooter 2: Nectar
     private final DcMotorEx intakeMotor;       // Intake motor (floor pickup)
     private final DcMotorEx sortingMotor;      // Sorting motor (pushes/sorts balls into shooter)
-    private final Servo gateServo;           // Servo gate blocking/releasing balls into flywheels
-    private final Servo rampServo;           // Ramp servo lowering/raising intake ramp for flower
+    private final Servo rampServoLeft;       // Left ramp servo
+    private final Servo rampServoRight;      // Right ramp servo (reversed orientation)
 
     // Odometry localizer
     private final TwoWheelLocalizer localizer;
@@ -52,10 +52,6 @@ public class subsystems {
     private static final double BLUE_HIVE_1_Y = 36.0;
     private static final double BLUE_HIVE_2_X = 0.0;
     private static final double BLUE_HIVE_2_Y = 108.0;
-
-    // Servo Gate Position Constants
-    public static final double GATE_CLOSED = 0.0;
-    public static final double GATE_OPEN   = 0.6;
 
     // Ramp Servo Position Constants (90 degrees rotation difference)
     public static final double RAMP_UP   = 0.0; // Stowed up position
@@ -106,12 +102,14 @@ public class subsystems {
         intakeMotor.setDirection(DcMotorEx.Direction.FORWARD);
         sortingMotor.setDirection(DcMotorEx.Direction.FORWARD);
 
-        // Initialize Servos
-        gateServo = hardwareMap.get(Servo.class, "gateServo");
-        gateServo.setPosition(GATE_CLOSED); // Default gate is CLOSED
+        // Initialize Dual Ramp Servos ("rampLeft" and "rampRight")
+        rampServoLeft = hardwareMap.get(Servo.class, "rampLeft");
+        rampServoRight = hardwareMap.get(Servo.class, "rampRight");
 
-        rampServo = hardwareMap.get(Servo.class, "rampServo");
-        rampServo.setPosition(RAMP_UP); // Default ramp is UP
+        rampServoLeft.setDirection(Servo.Direction.FORWARD);
+        rampServoRight.setDirection(Servo.Direction.REVERSE);
+
+        raiseRamp();
     }
 
     private double rpmToTicksPerSec(double rpm, double ticksPerRev) {
@@ -135,30 +133,20 @@ public class subsystems {
         return activeHive;
     }
 
-    // Servo Gate Controls
-    public void openGate() {
-        gateServo.setPosition(GATE_OPEN);
-    }
-
-    public void closeGate() {
-        gateServo.setPosition(GATE_CLOSED);
-    }
-
-    public void setGatePosition(double position) {
-        gateServo.setPosition(position);
-    }
-
     // Ramp Servo Controls (Flower Intake)
     public void lowerRamp() {
-        rampServo.setPosition(RAMP_DOWN);
+        rampServoLeft.setPosition(RAMP_DOWN);
+        rampServoRight.setPosition(RAMP_DOWN);
     }
 
     public void raiseRamp() {
-        rampServo.setPosition(RAMP_UP);
+        rampServoLeft.setPosition(RAMP_UP);
+        rampServoRight.setPosition(RAMP_UP);
     }
 
     public void setRampPosition(double position) {
-        rampServo.setPosition(position);
+        rampServoLeft.setPosition(position);
+        rampServoRight.setPosition(position);
     }
 
     /**
@@ -198,7 +186,6 @@ public class subsystems {
     public void stopShooters() {
         shooter1Pollen.setVelocity(0.0);
         shooter2Nectar.setVelocity(0.0);
-        closeGate();
     }
 
     // Intake Controls
@@ -235,6 +222,5 @@ public class subsystems {
         sortingMotor.setPower(0.0);
     }
 
-    public double getGateCurrentPosition() { return gateServo.getPosition(); }
-    public double getRampCurrentPosition() { return rampServo.getPosition(); }
+    public double getRampCurrentPosition() { return rampServoLeft.getPosition(); }
 }

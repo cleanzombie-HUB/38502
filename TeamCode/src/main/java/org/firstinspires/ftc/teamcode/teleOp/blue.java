@@ -48,7 +48,7 @@ public class blue extends LinearOpMode {
         // Initialize Raw Subsystem
         rawSubsystem robotSubsystems = new rawSubsystem(hardwareMap);
 
-        telemetry.addData("Status", "Blue TeleOp Initialized (Dual Hive Auto-Snap Enabled).");
+        telemetry.addData("Status", "Blue TeleOp Initialized.");
         telemetry.update();
 
         waitForStart();
@@ -94,26 +94,24 @@ public class blue extends LinearOpMode {
                 robotSubsystems.setShootingPosition(rawSubsystem.ShootingPosition.FAR);
             }
 
-            // 3. Flower Intake Ramp Control (Gamepad 2 D-Pad Right = Lower Ramp, D-Pad Left = Raise Ramp)
+            // 3. Flower Intake Ramp Control (Gamepad 2 D-Pad Right = Lower Ramp 200°, D-Pad Left = Raise Ramp)
             if (gamepad2.dpad_right) {
-                robotSubsystems.lowerRamp(); // Lower ramp 90 degrees for flower intake
+                robotSubsystems.lowerRamp(); // Lower ramp 200 degrees for flower intake
             } else if (gamepad2.dpad_left) {
-                robotSubsystems.raiseRamp(); // Raise ramp 90 degrees (stowed)
+                robotSubsystems.raiseRamp(); // Raise ramp stowed
             }
 
-            // 4. Dedicated Shooter, Servo Gate, & Auto Sorting Controls (Gamepad 2)
+            // 4. Dedicated Shooter & Auto Sorting Controls (Gamepad 2)
             if (gamepad2.right_bumper) {
                 // Shoot Pollen (Biobuzz Shooter 1)
                 robotSubsystems.startShooter1Pollen();
-                robotSubsystems.openGate();
                 robotSubsystems.sortingIn();
             } else if (gamepad2.y) {
                 // Shoot Nectar (Shooter 2)
                 robotSubsystems.startShooter2Nectar();
-                robotSubsystems.openGate();
                 robotSubsystems.sortingIn();
             } else if (gamepad2.left_bumper) {
-                // Stop Shooters, Sorting, & Close Servo Gate
+                // Stop Shooters & Sorting
                 robotSubsystems.stopShooters();
                 robotSubsystems.stopSorting();
             } else {
@@ -128,10 +126,8 @@ public class blue extends LinearOpMode {
 
                 // 6. Floor Intake Controls (Gamepad 2 Triggers)
                 if (gamepad2.right_trigger > 0.1) {
-                    robotSubsystems.closeGate();
                     robotSubsystems.setIntakePower(rawSubsystem.INTAKE_POWER * gamepad2.right_trigger);
                 } else if (gamepad2.left_trigger > 0.1) {
-                    robotSubsystems.closeGate();
                     robotSubsystems.setIntakePower(-rawSubsystem.INTAKE_POWER * gamepad2.left_trigger);
                 } else {
                     robotSubsystems.stopIntake();
@@ -143,7 +139,6 @@ public class blue extends LinearOpMode {
             telemetry.addData("Auto-Snap Target", snapHive1 ? "HIVE 1 (180°)" : (snapHive2 ? "HIVE 2 / OPPOSITE (0°)" : "MANUAL DRIVING"));
             telemetry.addData("Heading (Deg)", "%.1f", Math.toDegrees(currentHeading));
             telemetry.addData("Shooting Preset", robotSubsystems.getShootingPosition());
-            telemetry.addData("Gate Position", "%.2f", robotSubsystems.getGateCurrentPosition());
             telemetry.addData("Ramp Position", "%.2f", robotSubsystems.getRampCurrentPosition());
             telemetry.update();
         }
