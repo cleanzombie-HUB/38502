@@ -131,8 +131,8 @@ public class redAngle extends LinearOpMode {
         setPathState(0);
 
         while (opModeIsActive() && !isStopRequested()) {
-            autonomousPathUpdate();
             follower.update();
+            autonomousPathUpdate();
 
             Pose currentPose = follower.pose();
             telemetry.addData("Path State", pathState);

@@ -99,8 +99,8 @@ public class Constants {
             c.maxAccelerationConstraint.set(60.0);
             c.maxDecelerationConstraint.set(60.0);
 
-            c.brake.set(com.pedropathing.controllers.Controller.zero);
-            c.coast.set(com.pedropathing.controllers.Controller.zero);
+            c.brake.set(com.pedropathing.controllers.Controller.pid(1.0 / MAX_FORWARD_VELOCITY, 0.0, 0.0));
+            c.coast.set(com.pedropathing.controllers.Controller.proportionalFeedforward(1.0 / MAX_FORWARD_VELOCITY));
 
             c.holdPointTranslationalScaling.set(1.0);
             c.holdPointHeadingScaling.set(1.0);
@@ -120,7 +120,7 @@ public class Constants {
             c.naturalForwardDeceleration.set(30.0);
             c.naturalStrafeDeceleration.set(30.0);
 
-            c.linearBrakeCoefficients.set(com.pedropathing.math.Matrix.zero(2));
+            c.linearBrakeCoefficients.set(com.pedropathing.math.Matrix.diag(0.5 / MAX_FORWARD_VELOCITY, 0.5 / MAX_LATERAL_VELOCITY));
             c.quadraticBrakeCoefficients.set(com.pedropathing.math.Matrix.zero(2));
             c.headingBrakeCoefficients.set(com.pedropathing.math.Vector2D.zero());
         });
