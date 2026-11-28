@@ -27,17 +27,17 @@ public class Constants {
     // =========================================================================
     // 2. TUNED VELOCITY & ACCELERATION LIMITS (Update after running Tuners)
     // =========================================================================
-    public static double MAX_FORWARD_VELOCITY = 60.0; // in/s (measured from ForwardVelocityTuner)
-    public static double MAX_LATERAL_VELOCITY = 45.0; // in/s (measured from LateralVelocityTuner)
-    public static double MAX_ANGULAR_VELOCITY = Math.toRadians(360.0); // rad/s (measured from TurnTest)
+    public static double MAX_FORWARD_VELOCITY = 45.97; // in/s (measured from ForwardVelocityTuner)
+    public static double MAX_LATERAL_VELOCITY = 33.26; // in/s (measured from LateralVelocityTuner)
+    public static double MAX_ANGULAR_VELOCITY = Math.toRadians(106.71); // rad/s (measured from TurnTest)
 
     // =========================================================================
     // 3. PID GAINS & FEEDFORWARDS (Update after tuning path follower)
     // =========================================================================
     // Translational PID
-    public static double TRANSLATIONAL_P = 0.1;
-    public static double TRANSLATIONAL_I = 0.0;
-    public static double TRANSLATIONAL_D = 0.01;
+    public static double TRANSLATIONAL_P = 1;
+    public static double TRANSLATIONAL_I = 0.1;
+    public static double TRANSLATIONAL_D = 0.2;
 
     // Heading PID
     public static double HEADING_P = 2.0;
@@ -77,6 +77,52 @@ public class Constants {
             c.backLeftDirection.set(DcMotorSimple.Direction.REVERSE);
             c.frontRightDirection.set(DcMotorSimple.Direction.FORWARD);
             c.backRightDirection.set(DcMotorSimple.Direction.FORWARD);
+        });
+    }
+
+    public static com.pedropathing.algorithm.ForesightConfig createForesightConfig() {
+        return createForesightConfig(1.0);
+    }
+
+    public static com.pedropathing.algorithm.ForesightConfig createForesightConfig(double maxPower) {
+        return new com.pedropathing.algorithm.ForesightConfig(c -> {
+            c.headingFeedback.set(com.pedropathing.controllers.Controller.pid(HEADING_P, HEADING_I, HEADING_D));
+            c.headingStaticFF.set(com.pedropathing.controllers.Controller.zero);
+            c.forwardTranslational.set(com.pedropathing.controllers.Controller.pid(TRANSLATIONAL_P, TRANSLATIONAL_I, TRANSLATIONAL_D));
+            c.strafeTranslational.set(com.pedropathing.controllers.Controller.pid(TRANSLATIONAL_P, TRANSLATIONAL_I, TRANSLATIONAL_D));
+
+            c.maxPathSpeed.set(maxPower);
+            c.maxVelocityConstraint.set(MAX_FORWARD_VELOCITY);
+            c.maxAchievableForwardVelocity.set(MAX_FORWARD_VELOCITY);
+            c.maxAchievableStrafeVelocity.set(MAX_LATERAL_VELOCITY);
+
+            c.maxAccelerationConstraint.set(60.0);
+            c.maxDecelerationConstraint.set(60.0);
+
+            c.brake.set(com.pedropathing.controllers.Controller.zero);
+            c.coast.set(com.pedropathing.controllers.Controller.zero);
+
+            c.holdPointTranslationalScaling.set(1.0);
+            c.holdPointHeadingScaling.set(1.0);
+            c.maxBrakingPower.set(1.0);
+            c.maxDecelerationScale.set(1.0);
+            c.brakeAggression.set(1.0);
+            c.coastDownToVelocity.set(0.0);
+
+            c.headingDeviationTolerance.set(Math.toRadians(2.0));
+            c.translationalDeviationTolerance.set(0.5);
+
+            c.brakeAtEnd.set(true);
+            c.pathSkip.set(false);
+            c.headingDriveRatio.set(1.0);
+            c.cosineScale.set(true);
+
+            c.naturalForwardDeceleration.set(30.0);
+            c.naturalStrafeDeceleration.set(30.0);
+
+            c.linearBrakeCoefficients.set(com.pedropathing.math.Matrix.zero(2));
+            c.quadraticBrakeCoefficients.set(com.pedropathing.math.Matrix.zero(2));
+            c.headingBrakeCoefficients.set(com.pedropathing.math.Vector2D.zero());
         });
     }
 }

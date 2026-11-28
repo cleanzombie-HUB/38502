@@ -24,16 +24,16 @@ public class rawSubsystem {
     private final DcMotorEx intakeMotor;       // Intake motor (floor pickup)
     private final DcMotorEx sortingMotor;      // Sorting motor (pushes/sorts balls into shooter)
     private final Servo rampServoLeft;       // Left ramp servo
-    private final Servo rampServoRight;      // Right ramp servo (reversed orientation)
+    private final Servo rampServoRight;      // Right ramp servo
 
     // Current selected shooting position (Default: CLOSE)
     private ShootingPosition currentPosition = ShootingPosition.CLOSE;
 
     // Studica Maverick Encoder Specs:
-    // Shooter 1 (Pollen): 1:1 6100 RPM Motor (112.0 4x quadrature ticks/rev)
+    // Shooter 1 (Pollen): 1:1 6100 RPM Motor (24.0 ticks/rev)
     public static final double SHOOTER1_TICKS_PER_REV = 24.0;
 
-    // Shooter 2 (Nectar): 1:1 6100 RPM Motor (112.0 4x quadrature ticks/rev)
+    // Shooter 2 (Nectar): 1:1 6100 RPM Motor (24.0 ticks/rev)
     public static final double SHOOTER2_TICKS_PER_REV = 24.0;
 
     // Studica 75002 Smart Servo Total Motion Range in Degrees (Default 270.0°)
@@ -44,12 +44,12 @@ public class rawSubsystem {
     public static final double RAMP_DOWN_DEGREES = 200.0; // 200° Lowered down position for flower intake
 
     // Preset Target RPM Constants for Pollen (Shooter 1: Max 6100 RPM)
-    public static final double POLLEN_CLOSE_RPM = 2500.0;
-    public static final double POLLEN_FAR_RPM   = 1800.0;
+    public static final double POLLEN_CLOSE_RPM = 1800.0;
+    public static final double POLLEN_FAR_RPM   = 2500.0;
 
     // Preset Target RPM Constants for Nectar (Shooter 2: Max 6100 RPM)
-    public static final double NECTAR_CLOSE_RPM = 3600.0;
-    public static final double NECTAR_FAR_RPM   = 4800.0;
+    public static final double NECTAR_CLOSE_RPM = 1800.0;
+    public static final double NECTAR_FAR_RPM   = 2500.0;
 
     // Motor Power Constants (Intake = 100%, Sorting = 40% for controlled feeding)
     public static final double INTAKE_POWER  = 1.0;
@@ -79,12 +79,12 @@ public class rawSubsystem {
         intakeMotor.setDirection(DcMotorEx.Direction.FORWARD);
         sortingMotor.setDirection(DcMotorEx.Direction.FORWARD);
 
-        // Initialize Dual Ramp Servos ("rampLeft" and "rampRight")
+        // Initialize Dual Ramp Servos ("rampLeft" and "rampRight") - BOTH FORWARD
         rampServoLeft = hardwareMap.get(Servo.class, "rampLeft");
         rampServoRight = hardwareMap.get(Servo.class, "rampRight");
 
         rampServoLeft.setDirection(Servo.Direction.FORWARD);
-        rampServoRight.setDirection(Servo.Direction.REVERSE);
+        rampServoRight.setDirection(Servo.Direction.FORWARD);
 
         raiseRamp();
     }

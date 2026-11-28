@@ -33,7 +33,7 @@ public class subsystems {
     private final DcMotorEx intakeMotor;       // Intake motor (floor pickup)
     private final DcMotorEx sortingMotor;      // Sorting motor (pushes/sorts balls into shooter)
     private final Servo rampServoLeft;       // Left ramp servo
-    private final Servo rampServoRight;      // Right ramp servo (reversed orientation)
+    private final Servo rampServoRight;      // Right ramp servo
 
     // Odometry localizer
     private final TwoWheelLocalizer localizer;
@@ -61,15 +61,15 @@ public class subsystems {
     public static final double RAMP_DOWN_DEGREES = 200.0; // 200° Lowered down position for flower intake
 
     // Studica Maverick Encoder Specs:
-    // Shooter 1 (Pollen): 1:1 6100 RPM Motor (112.0 4x quadrature ticks/rev)
-    public static final double SHOOTER1_TICKS_PER_REV = 112.0;
+    // Shooter 1 (Pollen): 1:1 6100 RPM Motor (24.0 ticks/rev)
+    public static final double SHOOTER1_TICKS_PER_REV = 24.0;
 
-    // Shooter 2 (Nectar): 1:1 6100 RPM Motor (112.0 4x quadrature ticks/rev)
-    public static final double SHOOTER2_TICKS_PER_REV = 112.0;
+    // Shooter 2 (Nectar): 1:1 6100 RPM Motor (24.0 ticks/rev)
+    public static final double SHOOTER2_TICKS_PER_REV = 24.0;
 
     // Preset Target RPM constants
-    public static final double POLLEN_RPM = 3800.0; // Shooter 1 (Max 6100 RPM)
-    public static final double NECTAR_RPM = 4400.0; // Shooter 2 (Max 6100 RPM)
+    public static final double POLLEN_RPM = 1800.0; // Shooter 1
+    public static final double NECTAR_RPM = 2200.0; // Shooter 2
 
     // Motor Power Constants (Full Power = 1.0)
     public static final double INTAKE_POWER  = 1.0;
@@ -105,12 +105,12 @@ public class subsystems {
         intakeMotor.setDirection(DcMotorEx.Direction.FORWARD);
         sortingMotor.setDirection(DcMotorEx.Direction.FORWARD);
 
-        // Initialize Dual Ramp Servos ("rampLeft" and "rampRight")
+        // Initialize Dual Ramp Servos ("rampLeft" and "rampRight") - BOTH FORWARD so both rotate down together!
         rampServoLeft = hardwareMap.get(Servo.class, "rampLeft");
         rampServoRight = hardwareMap.get(Servo.class, "rampRight");
 
         rampServoLeft.setDirection(Servo.Direction.FORWARD);
-        rampServoRight.setDirection(Servo.Direction.REVERSE);
+        rampServoRight.setDirection(Servo.Direction.FORWARD);
 
         raiseRamp();
     }

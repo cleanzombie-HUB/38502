@@ -214,11 +214,10 @@ public class redAuto extends LinearOpMode {
         TwoWheelLocalizer localizer = new TwoWheelLocalizer(hardwareMap, Constants.createTwoWheelConfig());
         Mecanum drivetrain = new Mecanum(hardwareMap, Constants.createMecanumConfig());
 
-        foresightConfig = new ForesightConfig(c -> {
-            c.maxPathSpeed.set(MAX_POWER);
-        });
+        foresightConfig = Constants.createForesightConfig(MAX_POWER);
         Foresight foresight = new Foresight(foresightConfig);
         follower = new Follower(localizer, drivetrain, foresight);
+        follower.holdEnd.set(true);
 
         // Initialize Raw Subsystem (No PedroPathing/Odometry dependencies)
         robotSubsystems = new rawSubsystem(hardwareMap);

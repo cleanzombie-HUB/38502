@@ -4,29 +4,31 @@ import com.pedropathing.algorithm.Foresight;
 import com.pedropathing.algorithm.ForesightConfig;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.math.Pose;
+import com.pedropathing.paths.Path;
 import com.pedropathing.revhub.drivetrains.Mecanum;
 import com.pedropathing.revhub.localizers.TwoWheelLocalizer;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 
 import org.firstinspires.ftc.teamcode.helper.PathsPedro;
 import org.firstinspires.ftc.teamcode.helper.RobotState;
 import org.firstinspires.ftc.teamcode.pedroPathing.constants.Constants;
 
-/**
- * Autonomous OpMode for Red Alliance testing only Pedro Pathing.
- */
 @Autonomous(name = "Red Angle (Path Test)", group = "Flower")
 public class redAngle extends LinearOpMode {
 
-    private static double MAX_POWER = 1.0;
-    private static double MIN_POWER = 0.4;
+    private static final double MAX_POWER = 1.0;
+    private static final double MIN_POWER = 0.4;
 
     private Follower follower;
     private ForesightConfig foresightConfig;
     private PathsPedro.RedFlowerAngle pathsPedro;
 
+    private Path p1, p2, p3, p4, p5, p6, p7, p8;
+
     private int pathState = 0;
+    private boolean pathStarted = false;
 
     public void setMaxPower(double maxPower) {
         if (foresightConfig != null) {
@@ -36,90 +38,55 @@ public class redAngle extends LinearOpMode {
 
     public void setPathState(int pState) {
         pathState = pState;
+        pathStarted = false;
     }
 
-    /**
-     * Sequential path execution for path testing only with power capping.
-     */
+    public void followPath(Path path, int nextState) {
+        if (!pathStarted) {
+            follower.follow(path);
+            pathStarted = true;
+        } else if (!follower.isBusy()) {
+            setPathState(nextState);
+        }
+    }
+
     public void autonomousPathUpdate() {
         switch (pathState) {
             case 0:
-                // Start 1: p1toflower (MAX POWER)
                 setMaxPower(MAX_POWER);
-                follower.follow(pathsPedro.p1toflower());
-                setPathState(1);
+                followPath(p1, 1);
                 break;
-
             case 1:
-                // Start 2: p2flowerintake (MIN POWER = 0.4)
-                if (!follower.isBusy()) {
-                    setMaxPower(MIN_POWER);
-                    follower.follow(pathsPedro.p2flowerintake());
-                    setPathState(2);
-                }
+                setMaxPower(MIN_POWER);
+                followPath(p2, 2);
                 break;
-
             case 2:
-                // Start 3: p3toshoot (MAX POWER)
-                if (!follower.isBusy()) {
-                    setMaxPower(MAX_POWER);
-                    follower.follow(pathsPedro.p3toshoot());
-                    setPathState(3);
-                }
+                setMaxPower(MAX_POWER);
+                followPath(p3, 3);
                 break;
-
             case 3:
-                // Start 4: p4shoot (MAX POWER)
-                if (!follower.isBusy()) {
-                    setMaxPower(MAX_POWER);
-                    follower.follow(pathsPedro.p4shoot());
-                    setPathState(4);
-                }
+                setMaxPower(MAX_POWER);
+                followPath(p4, 4);
                 break;
-
             case 4:
-                // Start 5: p5tointake (MAX POWER)
-                if (!follower.isBusy()) {
-                    setMaxPower(MAX_POWER);
-                    follower.follow(pathsPedro.p5tointake());
-                    setPathState(5);
-                }
+                setMaxPower(MAX_POWER);
+                followPath(p5, 5);
                 break;
-
             case 5:
-                // Start 6: p6flowerintake (MIN POWER = 0.4)
-                if (!follower.isBusy()) {
-                    setMaxPower(MIN_POWER);
-                    follower.follow(pathsPedro.p6flowerintake());
-                    setPathState(6);
-                }
+                setMaxPower(MIN_POWER);
+                followPath(p6, 6);
                 break;
-
             case 6:
-                // Start 7: p7shoot (MAX POWER)
-                if (!follower.isBusy()) {
-                    setMaxPower(MAX_POWER);
-                    follower.follow(pathsPedro.p7shoot());
-                    setPathState(7);
-                }
+                setMaxPower(MAX_POWER);
+                followPath(p7, 7);
                 break;
-
             case 7:
-                // Start 8: p8park (MAX POWER)
-                if (!follower.isBusy()) {
-                    setMaxPower(MAX_POWER);
-                    follower.follow(pathsPedro.p8park());
-                    setPathState(8);
-                }
+                setMaxPower(MAX_POWER);
+                followPath(p8, 8);
                 break;
-
             case 8:
-                // Path sequence complete
-                if (!follower.isBusy()) {
-                    setPathState(-1);
-                }
+                setPathState(-1);
                 break;
-
             default:
                 break;
         }
@@ -130,19 +97,31 @@ public class redAngle extends LinearOpMode {
         TwoWheelLocalizer localizer = new TwoWheelLocalizer(hardwareMap, Constants.createTwoWheelConfig());
         Mecanum drivetrain = new Mecanum(hardwareMap, Constants.createMecanumConfig());
 
-        foresightConfig = new ForesightConfig(c -> {
-            c.maxPathSpeed.set(MAX_POWER);
-        });
+        // Direct references to verify actual power sent to hardwareMap motors
+        DcMotorEx fl = hardwareMap.get(DcMotorEx.class, "frontLeft");
+        DcMotorEx fr = hardwareMap.get(DcMotorEx.class, "frontRight");
+        DcMotorEx bl = hardwareMap.get(DcMotorEx.class, "backLeft");
+        DcMotorEx br = hardwareMap.get(DcMotorEx.class, "backRight");
+
+        foresightConfig = Constants.createForesightConfig(MAX_POWER);
         Foresight foresight = new Foresight(foresightConfig);
         follower = new Follower(localizer, drivetrain, foresight);
+        follower.holdEnd.set(true);
 
         pathsPedro = new PathsPedro.RedFlowerAngle();
+
+        p1 = pathsPedro.p1toflower();
+        p2 = pathsPedro.p2flowerintake();
+        p3 = pathsPedro.p3toshoot();
+        p4 = pathsPedro.p4shoot();
+        p5 = pathsPedro.p5tointake();
+        p6 = pathsPedro.p6flowerintake();
+        p7 = pathsPedro.p7shoot();
+        p8 = pathsPedro.p8park();
+
         follower.setPose(pathsPedro.getStartPose());
 
         telemetry.addData("Status", "Red Angle Path Test Initialized");
-        telemetry.addData("Start Pose X", "%.2f", pathsPedro.getStartPose().x());
-        telemetry.addData("Start Pose Y", "%.2f", pathsPedro.getStartPose().y());
-        telemetry.addData("Start Heading (deg)", "%.2f", Math.toDegrees(pathsPedro.getStartPose().heading()));
         telemetry.update();
 
         waitForStart();
@@ -152,15 +131,16 @@ public class redAngle extends LinearOpMode {
         setPathState(0);
 
         while (opModeIsActive() && !isStopRequested()) {
-            follower.update();
             autonomousPathUpdate();
+            follower.update();
 
             Pose currentPose = follower.pose();
             telemetry.addData("Path State", pathState);
             telemetry.addData("Follower Busy", follower.isBusy());
-            telemetry.addData("Pose X", "%.2f", currentPose.x());
-            telemetry.addData("Pose Y", "%.2f", currentPose.y());
+            telemetry.addData("Pose X / Y", "%.2f / %.2f", currentPose.x(), currentPose.y());
             telemetry.addData("Heading (deg)", "%.2f", Math.toDegrees(currentPose.heading()));
+            telemetry.addData("Power FL / FR", "%.2f / %.2f", fl.getPower(), fr.getPower());
+            telemetry.addData("Power BL / BR", "%.2f / %.2f", bl.getPower(), br.getPower());
             telemetry.update();
         }
 
